@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily Digest</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1f2328;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background:#ffffff;border:1px solid #d0d7de;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background:#0969da;color:#ffffff;padding:20px 24px;">
+              <h1 style="margin:0;font-size:22px;font-weight:700;">Daily Digest</h1>
+              <p style="margin:8px 0 0;font-size:14px;opacity:0.95;">{{ repo }} — {{ date }}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <h2 style="margin:0 0 12px;font-size:16px;">Summary</h2>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d0d7de;border-radius:10px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;"><strong>Open PRs</strong></td>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;text-align:right;">{{ open_pr_count }}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;"><strong>Open issues</strong></td>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;text-align:right;">{{ open_issue_count }}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;"><strong>CI failures ({{ hours }}h)</strong></td>
+                  <td style="padding:12px 16px;border-bottom:1px solid #d0d7de;font-size:14px;text-align:right;">{{ failed_ci_count }}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 16px;font-size:14px;"><strong>CI successes ({{ hours }}h)</strong></td>
+                  <td style="padding:12px 16px;font-size:14px;text-align:right;">{{ successful_ci_count }}</td>
+                </tr>
+              </table>
+
+              {% if errors %}
+              <p style="margin:0 0 24px;padding:12px 16px;background:#fff8c5;border:1px solid #d4a72c;border-radius:8px;font-size:13px;">
+                Some sections could not be loaded:
+                {% for error in errors %}{{ error }}{% if not loop.last %}; {% endif %}{% endfor %}
+              </p>
+              {% endif %}
+
+              <h2 style="margin:0 0 12px;font-size:16px;">Open Pull Requests</h2>
+              {% if open_prs %}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d0d7de;border-radius:10px;margin-bottom:24px;border-collapse:separate;">
+                <tr style="background:#f6f8fa;">
+                  <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#656d76;">#</th>
+                  <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#656d76;">Title</th>
+                  <th style="padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:#656d76;">Author</th>
+                </tr>
+                {% for pr in open_prs %}
+                <tr>
+                  <td style="padding:10px 12px;border-top:1px solid #d0d7de;font-size:14px;">{{ pr.number }}</td>
+                  <td style="padding:10px 12px;border-top:1px solid #d0d7de;font-size:14px;">
+                    <a href="{{ pr.url }}" style="color:#0969da;text-decoration:none;">{{ pr.title }}</a>
+                  </td>
+                  <td style="padding:10px 12px;border-top:1px solid #d0d7de;font-size:14px;">{{ pr.author }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+              {% else %}
+              <p style="margin:0 0 24px;font-size:14px;color:#656d76;">No open pull requests.</p>
+              {% endif %}
+
+              <h2 style="margin:0 0 12px;font-size:16px;">CI Failures (last {{ hours }} hours)</h2>
+              {% if failed_ci %}
+              {% for failure in failed_ci %}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d0d7de;border-radius:10px;margin-bottom:12px;">
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <h3 style="margin:0 0 8px;font-size:15px;">{{ failure.workflow_name }}</h3>
+                    <p style="margin:0 0 4px;font-size:13px;"><strong>Branch:</strong> {{ failure.branch }}</p>
+                    <p style="margin:0 0 4px;font-size:13px;"><strong>Author:</strong> {{ failure.author }}</p>
+                    <p style="margin:0 0 10px;font-size:13px;"><strong>Updated:</strong> {{ failure.updated_at }}</p>
+                    <a href="{{ failure.url }}" style="color:#0969da;font-size:13px;text-decoration:none;">View on GitHub</a>
+                  </td>
+                </tr>
+              </table>
+              {% endfor %}
+              {% else %}
+              <p style="margin:0 0 24px;font-size:14px;color:#656d76;">No CI failures in the last {{ hours }} hours.</p>
+              {% endif %}
+
+              <h2 style="margin:0 0 12px;font-size:16px;">Latest Release</h2>
+              {% if latest_release %}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d0d7de;border-radius:10px;margin-bottom:8px;">
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <h3 style="margin:0 0 8px;font-size:15px;">{{ latest_release.name }} ({{ latest_release.tag_name }})</h3>
+                    <p style="margin:0 0 4px;font-size:13px;"><strong>Author:</strong> {{ latest_release.author }}</p>
+                    <p style="margin:0 0 10px;font-size:13px;"><strong>Published:</strong> {{ latest_release.published_at }}</p>
+                    <a href="{{ latest_release.url }}" style="color:#0969da;font-size:13px;text-decoration:none;">View release</a>
+                  </td>
+                </tr>
+              </table>
+              {% else %}
+              <p style="margin:0;font-size:14px;color:#656d76;">No releases published yet.</p>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px;background:#f6f8fa;border-top:1px solid #d0d7de;font-size:12px;color:#656d76;">
+              Automated daily digest from MCP Client
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

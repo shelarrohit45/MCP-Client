@@ -23,12 +23,22 @@ LOCAL_EMAIL_MCP_BINARY = ROOT / "node_modules" / ".bin" / "email-mcp"
 LOCAL_EMAIL_MCP_ENTRY = ROOT / "node_modules" / "@codefuturist" / "email-mcp" / "dist" / "main.js"
 
 
-def _is_email_mcp_shutdown_error(error: BaseException) -> bool:
+def _unwrap_exception_group(error: BaseException) -> BaseException:
+    while isinstance(error, BaseExceptionGroup) and len(error.exceptions) == 1:
+        error = error.exceptions[0]
+    return error
+
+
+def _is_mcp_shutdown_error(error: BaseException) -> bool:
     if error.__class__.__name__ == "BrokenResourceError":
         return True
     if isinstance(error, BaseExceptionGroup) and len(error.exceptions) == 1:
-        return _is_email_mcp_shutdown_error(error.exceptions[0])
+        return _is_mcp_shutdown_error(error.exceptions[0])
     return False
+
+
+def _is_email_mcp_shutdown_error(error: BaseException) -> bool:
+    return _is_mcp_shutdown_error(error)
 
 
 class MCPConnectionError(Exception):
@@ -136,10 +146,14 @@ async def email_mcp_session(settings: Settings) -> AsyncIterator[ClientSession]:
 async def github_mcp_session(github_token: str) -> AsyncIterator[ClientSession]:
     """Open a connected GitHub MCP session."""
     params = resolve_github_server_params(github_token)
-    async with stdio_client(params) as (read_stream, write_stream):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-            yield session
+    try:
+        async with stdio_client(params) as (read_stream, write_stream):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                yield session
+    except BaseExceptionGroup as group:
+        if not _is_mcp_shutdown_error(group):
+            raise
 
 
 async def list_email_tools(settings: Settings) -> list[str]:
@@ -181,16 +195,15 @@ def _run_async(async_fn, /, *args):
         return anyio.run(async_fn, *args)
     except* Exception as group:
         if len(group.exceptions) == 1:
-            error = group.exceptions[0]
+            error = _unwrap_exception_group(group.exceptions[0])
             if error.__class__.__name__ == "BrokenResourceError":
                 raise MCPConnectionError(
-                    "Email MCP server exited unexpectedly. "
-                    "Check config/email-mcp/config.toml and use a Gmail app password in .env."
+                    "MCP server exited unexpectedly. "
+                    "Check your MCP server configuration and credentials."
                 ) from error
             raise error from group
         raise MCPConnectionError(
-            "Email MCP connection failed. "
-            "Run: python scripts/setup_email_mcp_config.py\n"
+            "MCP connection failed. "
             f"Details: {group.exceptions[0]}"
         ) from group
 
@@ -211,7 +224,7 @@ def call_email_tool_sync(
 
 def list_github_tools_sync(github_token: str) -> list[str]:
     """Synchronous wrapper for list_github_tools."""
-    return anyio.run(list_github_tools, github_token)
+    return _run_async(list_github_tools, github_token)
 
 
 def call_github_tool_sync(
@@ -220,7 +233,7 @@ def call_github_tool_sync(
     arguments: dict[str, Any] | None = None,
 ) -> CallToolResult:
     """Synchronous wrapper for call_github_tool."""
-    return anyio.run(call_github_tool, github_token, tool_name, arguments)
+    return _run_async(call_github_tool, github_token, tool_name, arguments)
 
 
 def extract_text_result(result: CallToolResult) -> str:

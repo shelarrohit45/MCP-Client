@@ -10,6 +10,7 @@ from email_client import EmailSendError, send_test_email
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
 from workflows.ci_alert import CiAlertError, run_ci_alert
+from workflows.daily_digest import DailyDigestError, run_daily_digest
 from workflows.pr_events import check_pr_events, print_pr_events_summary
 from workflows.pr_notify import notify_new_pull_requests, print_pr_notify_summary
 
@@ -104,6 +105,11 @@ def ci_alert_command(dry_run: bool) -> None:
     run_ci_alert(settings, dry_run=dry_run)
 
 
+def digest_command(dry_run: bool, send: bool) -> None:
+    settings = load_settings()
+    run_daily_digest(settings, dry_run=dry_run, send=send)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -157,6 +163,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     ci_alert = subparsers.add_parser("ci-alert", help="Send email alert for failed CI runs (last 24h)")
     ci_alert.add_argument("--dry-run", action="store_true", help="Print alert without sending")
+
+    digest = subparsers.add_parser("digest", help="Send daily repository activity digest email")
+    digest.add_argument("--dry-run", action="store_true", help="Print digest preview without sending")
+    digest.add_argument("--send", action="store_true", help="Send digest email to recipients")
     return parser
 
 
@@ -214,6 +224,14 @@ def main() -> None:
             ci_alert_command(dry_run=args.dry_run)
             return
 
+        if args.command == "digest":
+            if args.dry_run and args.send:
+                parser.error("Use only one of --dry-run or --send")
+            if not args.dry_run and not args.send:
+                parser.error("digest requires --dry-run or --send")
+            digest_command(dry_run=args.dry_run, send=args.send)
+            return
+
         print_default_summary()
     except ConfigError as error:
         print(f"Configuration error: {error}")
@@ -226,6 +244,9 @@ def main() -> None:
         sys.exit(1)
     except CiAlertError as error:
         print(f"CI alert error: {error}")
+        sys.exit(1)
+    except DailyDigestError as error:
+        print(f"Daily digest error: {error}")
         sys.exit(1)
     except ActionServerError as error:
         print(f"Action server error: {error}")

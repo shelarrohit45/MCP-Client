@@ -12,6 +12,11 @@ from config import Settings
 from mcp_manager import MCPConnectionError, call_github_tool_sync, extract_text_result
 from mcp.types import CallToolResult
 
+try:
+    from mcp.shared.exceptions import McpError
+except ImportError:
+    McpError = Exception  # type: ignore[misc, assignment]
+
 ROOT = Path(__file__).resolve().parent.parent
 GITHUB_SAMPLE_PATH = ROOT / "logs" / "github_sample.json"
 
@@ -38,6 +43,15 @@ class FailedRunSummary:
     author: str
     url: str
     updated_at: str
+
+
+@dataclass
+class ReleaseSummary:
+    tag_name: str
+    name: str
+    author: str
+    published_at: str
+    url: str
 
 
 @dataclass
@@ -122,25 +136,103 @@ def _summarize_failed_runs(data: Any) -> list[FailedRunSummary]:
     return summaries
 
 
-def fetch_failed_ci_runs(settings: Settings, hours: int = 24) -> list[FailedRunSummary]:
-    """Fetch failed CI runs for the configured repository within the last N hours."""
+def _search_ci_runs(settings: Settings, status: str, hours: int = 24) -> list[FailedRunSummary]:
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d")
-    failure_query = (
-        f"repo:{settings.github_repo_full} is:pr status:failure updated:>{since}"
-    )
-
-    failed_result = call_github_tool_sync(
+    query = f"repo:{settings.github_repo_full} is:pr status:{status} updated:>{since}"
+    result = call_github_tool_sync(
         settings.github_token,
         "search_issues",
         {
-            "query": failure_query,
+            "query": query,
             "perPage": 30,
             "sort": "updated",
             "order": "desc",
         },
     )
-    failed_data = _parse_tool_json(failed_result, "search_issues")
-    return _summarize_failed_runs(failed_data)
+    data = _parse_tool_json(result, "search_issues")
+    return _summarize_failed_runs(data)
+
+
+def fetch_open_pull_requests(settings: Settings) -> list[PullRequestSummary]:
+    """Fetch open pull requests for the configured repository."""
+    result = call_github_tool_sync(
+        settings.github_token,
+        "list_pull_requests",
+        {
+            "owner": settings.github_owner,
+            "repo": settings.github_repo,
+            "state": "open",
+            "perPage": 30,
+            "sort": "updated",
+            "direction": "desc",
+        },
+    )
+    data = _parse_tool_json(result, "list_pull_requests")
+    return _summarize_pull_requests(data)
+
+
+def fetch_failed_ci_runs(settings: Settings, hours: int = 24) -> list[FailedRunSummary]:
+    """Fetch failed CI runs for the configured repository within the last N hours."""
+    return _search_ci_runs(settings, "failure", hours=hours)
+
+
+def fetch_successful_ci_runs(settings: Settings, hours: int = 24) -> list[FailedRunSummary]:
+    """Fetch successful CI runs for the configured repository within the last N hours."""
+    return _search_ci_runs(settings, "success", hours=hours)
+
+
+def fetch_open_issue_count(settings: Settings) -> int:
+    """Return the number of open issues in the configured repository."""
+    result = call_github_tool_sync(
+        settings.github_token,
+        "list_issues",
+        {
+            "owner": settings.github_owner,
+            "repo": settings.github_repo,
+            "state": "open",
+            "perPage": 100,
+        },
+    )
+    data = _parse_tool_json(result, "list_issues")
+    if isinstance(data, list):
+        return len(data)
+    return 0
+
+
+def fetch_latest_release(settings: Settings) -> ReleaseSummary | None:
+    """Fetch the latest release for the configured repository, if any."""
+    try:
+        result = call_github_tool_sync(
+            settings.github_token,
+            "get_latest_release",
+            {
+                "owner": settings.github_owner,
+                "repo": settings.github_repo,
+            },
+        )
+    except McpError as error:
+        if "404" in str(error):
+            return None
+        raise GitHubFetchError(str(error)) from error
+
+    if result.isError:
+        message = extract_text_result(result).strip()
+        if "404" in message:
+            return None
+        return None
+
+    data = _parse_tool_json(result, "get_latest_release")
+    if not isinstance(data, dict):
+        return None
+
+    author = data.get("author") or {}
+    return ReleaseSummary(
+        tag_name=str(data.get("tag_name", "")),
+        name=str(data.get("name") or data.get("tag_name", "Release")),
+        author=str(author.get("login", "unknown")),
+        published_at=str(data.get("published_at", "")),
+        url=str(data.get("html_url", "")),
+    )
 
 
 def fetch_github_data(settings: Settings) -> GitHubFetchResult:
@@ -151,21 +243,8 @@ def fetch_github_data(settings: Settings) -> GitHubFetchResult:
     failed_runs: list[FailedRunSummary] = []
 
     try:
-        pr_result = call_github_tool_sync(
-            settings.github_token,
-            "list_pull_requests",
-            {
-                "owner": settings.github_owner,
-                "repo": settings.github_repo,
-                "state": "open",
-                "perPage": 30,
-                "sort": "updated",
-                "direction": "desc",
-            },
-        )
-        pr_data = _parse_tool_json(pr_result, "list_pull_requests")
-        raw["open_pull_requests"] = pr_data
-        open_prs = _summarize_pull_requests(pr_data)
+        open_prs = fetch_open_pull_requests(settings)
+        raw["open_pull_requests"] = [asdict(pr) for pr in open_prs]
     except (GitHubFetchError, MCPConnectionError) as error:
         errors.append(f"open PRs: {error}")
         raw["open_pull_requests"] = {"error": str(error)}
