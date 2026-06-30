@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import textwrap
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from config import Settings
 from email_client import send_email
 from github_fetch import FailedRunSummary, GitHubFetchError, fetch_failed_ci_runs
 from mcp_manager import MCPConnectionError
+from template_renderer import TemplateRenderError, render_template
 
 
 class CiAlertError(Exception):
@@ -27,29 +28,23 @@ def build_ci_alert_subject(settings: Settings, failure: FailedRunSummary) -> str
     return f"[CI FAILED] {settings.github_repo_full} — {failure.workflow_name}"
 
 
-def build_ci_alert_body(settings: Settings, failures: list[FailedRunSummary]) -> str:
-    lines = [
-        f"CI failure alert for {settings.github_repo_full}",
-        f"Failed runs in the last 24 hours: {len(failures)}",
-        "",
-    ]
-    for index, failure in enumerate(failures, start=1):
-        lines.extend(
-            [
-                f"Failure {index}:",
-                f"  Workflow: {failure.workflow_name}",
-                f"  Branch: {failure.branch}",
-                f"  Author: {failure.author}",
-                f"  Updated: {failure.updated_at}",
-                f"  Link: {failure.url}",
-                "",
-            ]
-        )
-    return "\n".join(lines).strip()
+def build_ci_alert_html(
+    settings: Settings,
+    failures: list[FailedRunSummary],
+    *,
+    hours: int = 24,
+) -> str:
+    return render_template(
+        "ci_alert.html",
+        repo=settings.github_repo_full,
+        failure_count=len(failures),
+        hours=hours,
+        failures=[asdict(failure) for failure in failures],
+    )
 
 
 def run_ci_alert(settings: Settings, *, dry_run: bool = False, hours: int = 24) -> CiAlertResult:
-    """Fetch failed CI runs and send a plain-text alert email."""
+    """Fetch failed CI runs and send an HTML alert email."""
     try:
         failures = fetch_failed_ci_runs(settings, hours=hours)
     except (GitHubFetchError, MCPConnectionError) as error:
@@ -64,7 +59,11 @@ def run_ci_alert(settings: Settings, *, dry_run: bool = False, hours: int = 24) 
             dry_run=dry_run,
         )
 
-    body = build_ci_alert_body(settings, failures)
+    try:
+        html_body = build_ci_alert_html(settings, failures, hours=hours)
+    except TemplateRenderError as error:
+        raise CiAlertError(str(error)) from error
+
     subject = build_ci_alert_subject(settings, failures[0])
 
     if dry_run:
@@ -74,7 +73,7 @@ def run_ci_alert(settings: Settings, *, dry_run: bool = False, hours: int = 24) 
             Subject: {subject}
             To: {', '.join(settings.email_recipients)}
 
-            {body}
+            {html_body}
             """
         ).strip())
         return CiAlertResult(
@@ -84,7 +83,7 @@ def run_ci_alert(settings: Settings, *, dry_run: bool = False, hours: int = 24) 
             dry_run=True,
         )
 
-    send_email(settings, subject=subject, body=body, html=False)
+    send_email(settings, subject=subject, body=html_body, html=True)
     print(f"CI alert sent for {len(failures)} failure(s).")
     return CiAlertResult(
         repo=settings.github_repo_full,

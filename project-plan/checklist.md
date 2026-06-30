@@ -49,9 +49,12 @@ Mark each item when done. Complete steps in order.
 - [ ] Live alert received when CI actually fails (run `python src/main.py ci-alert`)
 
 ## Step 7 — HTML Templates
-- [ ] `jinja2` added to requirements
-- [ ] `templates/ci_alert.html` created
-- [ ] HTML alert email sends correctly
+- [x] `jinja2` added to requirements
+- [x] `templates/ci_alert.html` created
+- [x] `src/template_renderer.py` created
+- [x] CI alert sends HTML email
+- [x] `--dry-run` prints HTML preview
+- [ ] HTML alert received in inbox when CI fails
 
 ## Step 8 — Daily Digest
 - [ ] `src/workflows/daily_digest.py` created
