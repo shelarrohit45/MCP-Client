@@ -30,9 +30,9 @@ Mark each item when done. Complete steps in order.
 - [x] `list-github-tools` command works
 
 ## Step 4 — GitHub Data Fetch
-- [ ] Open PRs fetched from repo
-- [ ] Failed CI runs fetched
-- [ ] Sample JSON saved to `logs/github_sample.json`
+- [x] Open PRs fetched from repo
+- [x] Failed CI runs fetched
+- [x] Sample JSON saved to `logs/github_sample.json`
 
 ## Step 5 — Email MCP Connect
 - [ ] Email MCP server configured

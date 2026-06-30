@@ -2,6 +2,7 @@ import argparse
 import sys
 
 from config import ConfigError, load_settings
+from github_fetch import fetch_github_data, print_github_summary, save_github_sample
 from mcp_manager import MCPConnectionError, list_github_tools_sync
 
 
@@ -22,11 +23,20 @@ def list_github_tools_command() -> None:
         print(f"- {name}")
 
 
+def fetch_github_command() -> None:
+    settings = load_settings()
+    result = fetch_github_data(settings)
+    print_github_summary(result)
+    output_path = save_github_sample(result)
+    print(f"\nSaved sample data to: {output_path}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("list-github-tools", help="List GitHub MCP tools")
+    subparsers.add_parser("fetch-github", help="Fetch open PRs and failed CI data")
     return parser
 
 
@@ -37,6 +47,10 @@ def main() -> None:
     try:
         if args.command == "list-github-tools":
             list_github_tools_command()
+            return
+
+        if args.command == "fetch-github":
+            fetch_github_command()
             return
 
         print_default_summary()
