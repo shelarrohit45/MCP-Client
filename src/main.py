@@ -14,6 +14,7 @@ from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_t
 from workflows.ci_alert import CiAlertError, run_ci_alert
 from workflows.daily_digest import DailyDigestError, run_daily_digest
 from workflows.pr_events import check_pr_events, print_pr_events_summary
+from scheduler import SchedulerError, run_scheduler
 from workflows.pr_notify import notify_new_pull_requests, print_pr_notify_summary
 
 cli_logger = get_logger("cli")
@@ -114,6 +115,11 @@ def digest_command(dry_run: bool, send: bool) -> None:
     run_daily_digest(settings, dry_run=dry_run, send=send)
 
 
+def run_scheduler_command() -> None:
+    settings = load_settings()
+    run_scheduler(settings)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -171,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
     digest = subparsers.add_parser("digest", help="Send daily repository activity digest email")
     digest.add_argument("--dry-run", action="store_true", help="Print digest preview without sending")
     digest.add_argument("--send", action="store_true", help="Send digest email to recipients")
+
+    subparsers.add_parser(
+        "run-scheduler",
+        help="Run digest and CI alert jobs on schedule (see config/config.yaml)",
+    )
     return parser
 
 
@@ -237,6 +248,10 @@ def main() -> None:
             digest_command(dry_run=args.dry_run, send=args.send)
             return
 
+        if args.command == "run-scheduler":
+            run_scheduler_command()
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -260,6 +275,10 @@ def main() -> None:
         sys.exit(1)
     except ActionServerError as error:
         cli_logger.error("action_server_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except SchedulerError as error:
+        cli_logger.error("scheduler_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI

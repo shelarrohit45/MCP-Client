@@ -2,3 +2,4 @@ mcp
 python-dotenv
 pyyaml
 jinja2
+apscheduler
