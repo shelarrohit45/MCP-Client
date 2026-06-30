@@ -1,0 +1,12 @@
+github:
+  owner: "shelarrohit45"
+  repo: "MCP-Client"
+
+email:
+  # Static addresses — all alerts/digests send from sender to receiver
+  sender: "sender@example.com"
+  receiver: "receiver@example.com"
+
+schedule:
+  digest_time: "09:00"
+  ci_check_interval_minutes: 30

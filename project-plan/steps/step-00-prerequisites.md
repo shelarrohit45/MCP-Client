@@ -15,11 +15,12 @@
   - Scopes needed: `repo`, `workflow`
 - [ ] Save token securely (you will put it in `.env` later)
 
-### 2. Email
-- [ ] Choose an email account (Gmail, Outlook, etc.)
-- [ ] Enable IMAP access
-- [ ] Create an **app password** (not your main password)
-- [ ] Note SMTP host, port, IMAP host, port
+### 2. Email (static sender + receiver)
+- [ ] Choose **sender** email (account that sends alerts via SMTP)
+- [ ] Choose **receiver** email (where alerts and digests are delivered)
+- [ ] Set both in `config/config.yaml` under `email.sender` and `email.receiver`
+- [ ] Enable IMAP on sender account (for Email MCP)
+- [ ] Create **app password** for sender only → put in `.env` as `EMAIL_PASSWORD`
 
 **Gmail example:**
 - SMTP: `smtp.gmail.com:587`

@@ -8,9 +8,9 @@ Use this file to record your setup. **Do not put passwords or tokens here** — 
 
 | Item | Your value |
 |------|------------|
-| Repo owner (username or org) | |
-| Repo name | |
-| Full repo path (`owner/repo`) | |
+| Repo owner (username or org) | `shelarrohit45` |
+| Repo name | `MCP-Client` |
+| Full repo path (`owner/repo`) | `shelarrohit45/MCP-Client` |
 | PAT created? (yes/no) | |
 | PAT scopes (`repo`, `workflow`) | |
 
@@ -22,19 +22,23 @@ Fine-grained (recommended):
 
 ---
 
-## 2. Email
+## 2. Email (static sender → receiver)
 
 | Item | Your value |
 |------|------------|
+| Sender email (SMTP — sends alerts) | `shelarrohit78@gmail.com` |
+| Receiver email (gets all alerts/digests) | `rohitluckyrs45@gmail.com` |
 | Provider (Gmail / Outlook / other) | |
-| Email address | |
-| IMAP host | |
-| IMAP port | |
-| SMTP host | |
-| SMTP port | |
-| App password created? (yes/no) | |
+| Sender app password in `.env`? (yes/no) | |
 
-**Gmail:** https://myaccount.google.com/apppasswords (requires 2FA enabled)
+Configured in `config/config.yaml`:
+```yaml
+email:
+  sender: "your-sender@gmail.com"
+  receiver: "your-receiver@gmail.com"
+```
+
+**Gmail app password (sender only):** https://myaccount.google.com/apppasswords
 
 ---
 
@@ -51,13 +55,13 @@ Fine-grained (recommended):
 
 ## Step 0 Checklist
 
-- [ ] GitHub repo confirmed
-- [ ] Repo owner/name written above
+- [x] GitHub repo confirmed (`shelarrohit45/MCP-Client`)
+- [x] Repo owner/name written above
 - [ ] GitHub PAT created and saved securely
-- [ ] Email account chosen
-- [ ] IMAP enabled
-- [ ] App password created and saved securely
-- [ ] Software check passed
+- [x] Email account chosen (Gmail)
+- [x] Static sender/receiver set in `config/config.yaml`
+- [x] Sender app password in `.env`
+- [x] Software check passed (run `python3 scripts/check_prerequisites.py`)
 
 ---
 

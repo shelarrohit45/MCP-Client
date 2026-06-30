@@ -3,11 +3,13 @@
 Mark each item when done. Complete steps in order.
 
 ## Step 0 — Prerequisites
-- [ ] GitHub repo ready
-- [ ] GitHub Personal Access Token created
-- [ ] Email IMAP/SMTP credentials ready
-- [ ] Python 3.10+ installed
-- [ ] Node.js installed (for Email MCP)
+- [x] GitHub repo ready (`shelarrohit45/MCP-Client`)
+- [x] GitHub Personal Access Token created
+- [x] Static sender/receiver set (`shelarrohit78@gmail.com` → `rohitluckyrs45@gmail.com`)
+- [x] Python 3.10+ installed (Python 3.12 via Homebrew)
+- [x] Node.js installed (for Email MCP)
+- [x] `.env` created from `.env.example`
+- [x] `python3 scripts/check_prerequisites.py` passes
 
 ## Step 1 — Basic Project
 - [ ] Folder structure created (`src/`, `templates/`, `logs/`, `tests/`)
