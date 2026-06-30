@@ -3,7 +3,6 @@ github:
   repo: "MCP-Client"
 
 email:
-  # Static addresses — all alerts/digests send from sender to receiver
   sender: "sender@example.com"
   receiver: "receiver@example.com"
 

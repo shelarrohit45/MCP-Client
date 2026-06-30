@@ -19,10 +19,10 @@ Mark each item when done. Complete steps in order.
 - [x] `python src/main.py` runs successfully
 
 ## Step 2 — Config System
-- [ ] `config/config.yaml` created
-- [ ] `.env.example` created
-- [ ] `src/config.py` loads YAML + env
-- [ ] Config prints without exposing secrets
+- [x] `config/config.yaml` created
+- [x] `.env.example` created
+- [x] `src/config.py` loads YAML + env
+- [x] Config prints without exposing secrets
 
 ## Step 3 — GitHub MCP Connect
 - [ ] GitHub MCP server configured
