@@ -25,9 +25,9 @@ Mark each item when done. Complete steps in order.
 - [x] Config prints without exposing secrets
 
 ## Step 3 — GitHub MCP Connect
-- [ ] GitHub MCP server configured
-- [ ] `src/mcp_manager.py` connects to GitHub MCP
-- [ ] `list-github-tools` command works
+- [x] GitHub MCP server installed (`./scripts/install_github_mcp.sh`)
+- [x] `src/mcp_manager.py` connects to GitHub MCP
+- [x] `list-github-tools` command works
 
 ## Step 4 — GitHub Data Fetch
 - [ ] Open PRs fetched from repo
