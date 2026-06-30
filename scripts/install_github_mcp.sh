@@ -16,7 +16,6 @@ case "$ARCH" in
     ;;
 esac
 
-
 URL="https://github.com/github/github-mcp-server/releases/download/${VERSION}/${ASSET}"
 TMP_ARCHIVE="$(mktemp -t github-mcp-server.XXXXXX.tar.gz)"
 
