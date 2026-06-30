@@ -60,6 +60,7 @@ class PrEventState:
     snapshots: dict[int, PrSnapshot] = field(default_factory=dict)
     sent_events: set[str] = field(default_factory=set)
     last_checked_at: str | None = None
+    last_repo_sha: str = ""
 
     def event_key(self, pull_number: int, event_type: str, suffix: str = "") -> str:
         if suffix:
@@ -98,6 +99,7 @@ def load_pr_event_state(path: Path | None = None) -> PrEventState:
         snapshots=snapshots,
         sent_events=set(data.get("sent_events", [])),
         last_checked_at=data.get("last_checked_at"),
+        last_repo_sha=str(data.get("last_repo_sha", "")),
     )
 
 
@@ -106,6 +108,7 @@ def save_pr_event_state(state: PrEventState, path: Path | None = None) -> Path:
     state_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "last_checked_at": state.last_checked_at,
+        "last_repo_sha": state.last_repo_sha,
         "sent_events": sorted(state.sent_events),
         "snapshots": {str(number): snap.to_dict() for number, snap in state.snapshots.items()},
     }

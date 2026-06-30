@@ -68,7 +68,7 @@ def pr_notify_command(dry_run: bool, resend: bool, pr_number: int | None) -> Non
 def pr_watch_command(interval_minutes: int, dry_run: bool) -> None:
     settings = load_settings()
     print(f"Watching all PR events every {interval_minutes} minute(s). Press Ctrl+C to stop.")
-    print("Events: created, merged, rejected, reopened, approved, changes_requested, ci_failed, ci_passed")
+    print("Events: created, pushed, merged, rejected, reopened, approved, changes_requested, ci_failed, ci_passed, branch_push")
     while True:
         result = check_pr_events(settings, dry_run=dry_run)
         print_pr_events_summary(result)

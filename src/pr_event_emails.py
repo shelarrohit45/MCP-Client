@@ -7,7 +7,7 @@ import textwrap
 
 from action_tokens import create_action_token
 from config import Settings
-from github_pr import PullRequestInfo
+from github_pr import CommitInfo, PullRequestInfo
 
 EVENT_LABELS = {
     "created": "New Pull Request",
@@ -18,6 +18,8 @@ EVENT_LABELS = {
     "changes_requested": "Changes Requested",
     "ci_failed": "CI Failed",
     "ci_passed": "CI Passed",
+    "pushed": "New Commits Pushed",
+    "branch_push": "Code Pushed to Branch",
 }
 
 EVENT_SUBJECT_PREFIX = {
@@ -29,6 +31,8 @@ EVENT_SUBJECT_PREFIX = {
     "changes_requested": "[Changes Requested]",
     "ci_failed": "[CI Failed]",
     "ci_passed": "[CI Passed]",
+    "pushed": "[Code Pushed]",
+    "branch_push": "[Code Pushed]",
 }
 
 
@@ -94,8 +98,10 @@ def build_event_html(
         extra = f"<p><strong>Reviewed by:</strong> {html.escape(reviewer)}</p>"
     elif event_type in {"ci_failed", "ci_passed"} and ci_summary:
         extra = f"<p><strong>CI status:</strong> {html.escape(ci_summary)}</p>"
+    elif event_type == "pushed" and ci_summary:
+        extra = f"<p><strong>Latest commit:</strong> {html.escape(ci_summary)}</p>"
 
-    buttons = _action_buttons(settings, pr) if event_type == "created" else ""
+    buttons = _action_buttons(settings, pr) if event_type in {"created", "pushed"} else ""
     footer = """
     <p style="color:#555;font-size:14px;">
       Automated notification from MCP Client.
@@ -137,8 +143,8 @@ def build_event_text(
     if reviewer:
         lines.append(f"Reviewer: {reviewer}")
     if ci_summary:
-        lines.append(f"CI: {ci_summary}")
-    if event_type == "created" and pr.state == "open":
+        lines.append(f"Details: {ci_summary}")
+    if event_type in {"created", "pushed"} and pr.state == "open":
         lines.extend(
             [
                 f"Merge: {_action_url(settings, pr.number, 'merge')}",
@@ -146,3 +152,38 @@ def build_event_text(
             ]
         )
     return "\n".join(lines)
+
+
+def build_branch_push_subject(settings: Settings, branch: str, commit: CommitInfo) -> str:
+    short_sha = commit.sha[:7] if commit.sha else "unknown"
+    return f"[Code Pushed] {settings.github_repo_full} — {branch} ({short_sha})"
+
+
+def build_branch_push_html(settings: Settings, branch: str, commit: CommitInfo) -> str:
+    short_sha = html.escape(commit.sha[:7] if commit.sha else "unknown")
+    return textwrap.dedent(
+        f"""
+        <h2>Code pushed to branch</h2>
+        <p><strong>Repository:</strong> {html.escape(settings.github_repo_full)}</p>
+        <p><strong>Branch:</strong> {html.escape(branch)}</p>
+        <p><strong>Commit:</strong> <a href="{html.escape(commit.url)}">{short_sha}</a></p>
+        <p><strong>Author:</strong> {html.escape(commit.author)}</p>
+        <p><strong>Message:</strong> {html.escape(commit.message)}</p>
+        <p style="color:#555;font-size:14px;">Automated notification from MCP Client.</p>
+        """
+    ).strip()
+
+
+def build_branch_push_text(settings: Settings, branch: str, commit: CommitInfo) -> str:
+    short_sha = commit.sha[:7] if commit.sha else "unknown"
+    return "\n".join(
+        [
+            "Code pushed to branch",
+            f"Repository: {settings.github_repo_full}",
+            f"Branch: {branch}",
+            f"Commit: {short_sha}",
+            f"Author: {commit.author}",
+            f"Message: {commit.message}",
+            f"URL: {commit.url}",
+        ]
+    )

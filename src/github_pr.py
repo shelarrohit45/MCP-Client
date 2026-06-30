@@ -37,7 +37,18 @@ class PullRequestReview:
     submitted_at: str
 
 
+@dataclass
+class CommitInfo:
+    sha: str
+    message: str
+    author: str
+    url: str
+
+
 class PullRequestActionError(Exception):
+    """Raised when merge or close actions fail."""
+
+
     """Raised when merge or close actions fail."""
 
 
@@ -145,6 +156,61 @@ def get_pull_request_reviews(settings: Settings, pull_number: int) -> list[PullR
     if not isinstance(data, list):
         return []
     return [_summarize_review(item) for item in data if isinstance(item, dict)]
+
+
+def get_pull_request_commits(settings: Settings, pull_number: int, per_page: int = 1) -> list[CommitInfo]:
+    """Return recent commits on a pull request branch."""
+    result = call_github_tool_sync(
+        settings.github_token,
+        "pull_request_read",
+        {
+            "owner": settings.github_owner,
+            "repo": settings.github_repo,
+            "pullNumber": pull_number,
+            "method": "get_commits",
+            "perPage": per_page,
+        },
+    )
+    return _summarize_commits(_parse_tool_json(result, "pull_request_read"))
+
+
+def get_branch_commits(settings: Settings, branch: str = "main", per_page: int = 5) -> list[CommitInfo]:
+    """Return recent commits on a repository branch."""
+    result = call_github_tool_sync(
+        settings.github_token,
+        "list_commits",
+        {
+            "owner": settings.github_owner,
+            "repo": settings.github_repo,
+            "sha": branch,
+            "perPage": per_page,
+        },
+    )
+    return _summarize_commits(_parse_tool_json(result, "list_commits"))
+
+
+def _summarize_commits(data: Any) -> list[CommitInfo]:
+    if not isinstance(data, list):
+        return []
+    commits: list[CommitInfo] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        commit = item.get("commit") or {}
+        author = commit.get("author") or {}
+        author_name = str(author.get("name") or author.get("login") or "unknown")
+        user = item.get("author") or {}
+        if user.get("login"):
+            author_name = str(user.get("login"))
+        commits.append(
+            CommitInfo(
+                sha=str(item.get("sha", "")),
+                message=str(commit.get("message", "")).splitlines()[0] or "No message",
+                author=author_name,
+                url=str(item.get("html_url", "")),
+            )
+        )
+    return commits
 
 
 def get_pull_request(settings: Settings, pull_number: int) -> PullRequestInfo:
