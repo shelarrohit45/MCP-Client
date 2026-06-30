@@ -10,3 +10,8 @@ email:
 schedule:
   digest_time: "09:00"
   ci_check_interval_minutes: 30
+
+pr_notify:
+  action_base_url: "http://127.0.0.1:8765"
+  action_port: 8765
+  check_interval_minutes: 5

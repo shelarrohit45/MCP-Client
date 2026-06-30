@@ -33,6 +33,10 @@ class Settings:
     email_imap_port: int
     digest_time: str
     ci_check_interval_minutes: int
+    action_base_url: str
+    action_port: int
+    action_secret: str
+    pr_check_interval_minutes: int
 
     @property
     def github_repo_full(self) -> str:
@@ -85,6 +89,7 @@ def load_settings(
     github_cfg = data.get("github", {})
     email_cfg = data.get("email", {})
     schedule_cfg = data.get("schedule", {})
+    pr_cfg = data.get("pr_notify", {})
 
     github_owner = str(github_cfg.get("owner", "")).strip() or _require_env("GITHUB_OWNER")
     github_repo = str(github_cfg.get("repo", "")).strip() or _require_env("GITHUB_REPO")
@@ -111,4 +116,11 @@ def load_settings(
         email_imap_port=int(os.getenv("EMAIL_IMAP_PORT", "993")),
         digest_time=str(schedule_cfg.get("digest_time", "09:00")),
         ci_check_interval_minutes=int(schedule_cfg.get("ci_check_interval_minutes", 30)),
+        action_base_url=os.getenv("ACTION_BASE_URL", str(pr_cfg.get("action_base_url", "http://127.0.0.1:8765"))).strip().rstrip("/"),
+        action_port=int(os.getenv("ACTION_PORT", str(pr_cfg.get("action_port", 8765)))),
+        action_secret=os.getenv("ACTION_SECRET", str(pr_cfg.get("action_secret", ""))).strip()
+        or _require_env("ACTION_SECRET"),
+        pr_check_interval_minutes=int(
+            os.getenv("PR_CHECK_INTERVAL_MINUTES", str(pr_cfg.get("check_interval_minutes", 5)))
+        ),
     )
