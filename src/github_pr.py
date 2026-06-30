@@ -189,6 +189,14 @@ def get_branch_commits(settings: Settings, branch: str = "main", per_page: int =
     return _summarize_commits(_parse_tool_json(result, "list_commits"))
 
 
+def _commit_message_first_line(raw_message: Any) -> str:
+    message = str(raw_message or "").strip()
+    if not message:
+        return "No message"
+    lines = message.splitlines()
+    return lines[0] if lines else "No message"
+
+
 def _summarize_commits(data: Any) -> list[CommitInfo]:
     if not isinstance(data, list):
         return []
@@ -205,7 +213,7 @@ def _summarize_commits(data: Any) -> list[CommitInfo]:
         commits.append(
             CommitInfo(
                 sha=str(item.get("sha", "")),
-                message=str(commit.get("message", "")).splitlines()[0] or "No message",
+                message=_commit_message_first_line(commit.get("message")),
                 author=author_name,
                 url=str(item.get("html_url", "")),
             )
