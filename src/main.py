@@ -5,14 +5,18 @@ import urllib.error
 import urllib.request
 
 from action_server import ActionServerError, run_action_server
+from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
+from error_messages import format_error_for_user
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
 from workflows.ci_alert import CiAlertError, run_ci_alert
 from workflows.daily_digest import DailyDigestError, run_daily_digest
 from workflows.pr_events import check_pr_events, print_pr_events_summary
 from workflows.pr_notify import notify_new_pull_requests, print_pr_notify_summary
+
+cli_logger = get_logger("cli")
 
 
 def print_default_summary() -> None:
@@ -171,6 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    setup_logging()
     parser = build_parser()
     args = parser.parse_args()
 
@@ -234,25 +239,32 @@ def main() -> None:
 
         print_default_summary()
     except ConfigError as error:
+        cli_logger.error("configuration_error detail=%s", error)
         print(f"Configuration error: {error}")
         sys.exit(1)
     except MCPConnectionError as error:
-        print(f"MCP connection error: {error}")
+        cli_logger.error("mcp_connection_error detail=%s", error)
+        print(format_error_for_user(error))
         sys.exit(1)
     except EmailSendError as error:
-        print(f"Email error: {error}")
+        cli_logger.error("email_send_error detail=%s", error)
+        print(format_error_for_user(error))
         sys.exit(1)
     except CiAlertError as error:
-        print(f"CI alert error: {error}")
+        cli_logger.error("ci_alert_error detail=%s", error)
+        print(format_error_for_user(error))
         sys.exit(1)
     except DailyDigestError as error:
-        print(f"Daily digest error: {error}")
+        cli_logger.error("daily_digest_error detail=%s", error)
+        print(format_error_for_user(error))
         sys.exit(1)
     except ActionServerError as error:
-        print(f"Action server error: {error}")
+        cli_logger.error("action_server_error detail=%s", error)
+        print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI
-        print(f"Error: {error}")
+        cli_logger.exception("unhandled_error command=%s", getattr(args, "command", None))
+        print(format_error_for_user(error))
         sys.exit(1)
 
 

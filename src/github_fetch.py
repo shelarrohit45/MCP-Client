@@ -37,6 +37,7 @@ class PullRequestSummary:
 
 @dataclass
 class FailedRunSummary:
+    run_id: str
     title: str
     workflow_name: str
     branch: str
@@ -92,6 +93,15 @@ def _pr_branch(item: dict[str, Any]) -> str:
     return str(head.get("ref", "unknown"))
 
 
+def _ci_run_id(item: dict[str, Any]) -> str:
+    updated_at = str(item.get("updated_at", ""))
+    issue_id = item.get("id")
+    if issue_id is not None:
+        return f"{issue_id}:{updated_at}"
+    number = item.get("number", 0)
+    return f"pr-{number}:{updated_at}"
+
+
 def _summarize_pull_requests(data: Any) -> list[PullRequestSummary]:
     if not isinstance(data, list):
         return []
@@ -124,6 +134,7 @@ def _summarize_failed_runs(data: Any) -> list[FailedRunSummary]:
         title = str(item.get("title", "Untitled"))
         summaries.append(
             FailedRunSummary(
+                run_id=_ci_run_id(item),
                 title=title,
                 workflow_name=title,
                 branch=_pr_branch(item) if item.get("head") else "unknown",

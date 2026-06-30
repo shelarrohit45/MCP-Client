@@ -14,6 +14,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.types import CallToolResult, TextContent
 
+from app_logging import get_logger, log_tool_call
 from config import Settings
 from email_mcp_config import email_mcp_config_env, ensure_email_mcp_config
 
@@ -21,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LOCAL_GITHUB_MCP_BINARY = ROOT / "bin" / "github-mcp-server"
 LOCAL_EMAIL_MCP_BINARY = ROOT / "node_modules" / ".bin" / "email-mcp"
 LOCAL_EMAIL_MCP_ENTRY = ROOT / "node_modules" / "@codefuturist" / "email-mcp" / "dist" / "main.js"
+_mcp_logger = get_logger("mcp")
 
 
 def _unwrap_exception_group(error: BaseException) -> BaseException:
@@ -219,7 +221,15 @@ def call_email_tool_sync(
     arguments: dict[str, Any] | None = None,
 ) -> CallToolResult:
     """Synchronous wrapper for call_email_tool."""
-    return _run_async(call_email_tool, settings, tool_name, arguments)
+    try:
+        result = _run_async(call_email_tool, settings, tool_name, arguments)
+    except Exception as error:
+        log_tool_call(_mcp_logger, "email", tool_name, success=False, detail=str(error))
+        raise
+    status = "failure" if result.isError else "success"
+    detail = extract_text_result(result).strip()[:200] if result.isError else ""
+    log_tool_call(_mcp_logger, "email", tool_name, success=status == "success", detail=detail)
+    return result
 
 
 def list_github_tools_sync(github_token: str) -> list[str]:
@@ -233,7 +243,20 @@ def call_github_tool_sync(
     arguments: dict[str, Any] | None = None,
 ) -> CallToolResult:
     """Synchronous wrapper for call_github_tool."""
-    return _run_async(call_github_tool, github_token, tool_name, arguments)
+    try:
+        result = _run_async(call_github_tool, github_token, tool_name, arguments)
+    except Exception as error:
+        log_tool_call(_mcp_logger, "github", tool_name, success=False, detail=str(error))
+        raise
+    detail = extract_text_result(result).strip()[:200] if result.isError else ""
+    log_tool_call(
+        _mcp_logger,
+        "github",
+        tool_name,
+        success=not result.isError,
+        detail=detail,
+    )
+    return result
 
 
 def extract_text_result(result: CallToolResult) -> str:
