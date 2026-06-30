@@ -39,13 +39,14 @@ Mark each item when done. Complete steps in order.
 - [x] `src/mcp_manager.py` extended for Email MCP
 - [x] `list-email-tools` command added
 - [x] `send-test-email` command added
-- [ ] Test email received in inbox (run `python src/main.py send-test-email`)
+- [x] Test email received in inbox
 
 ## Step 6 — CI Alert Workflow
-- [ ] Failed runs detected (last 24h)
-- [ ] Alert email built
-- [ ] `ci-alert` command works
-- [ ] `--dry-run` mode works
+- [x] Failed runs detected (last 24h)
+- [x] Alert email built
+- [x] `ci-alert` command works
+- [x] `--dry-run` mode works
+- [ ] Live alert received when CI actually fails (run `python src/main.py ci-alert`)
 
 ## Step 7 — HTML Templates
 - [ ] `jinja2` added to requirements

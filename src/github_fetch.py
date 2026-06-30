@@ -35,6 +35,7 @@ class FailedRunSummary:
     title: str
     workflow_name: str
     branch: str
+    author: str
     url: str
     updated_at: str
 
@@ -112,6 +113,7 @@ def _summarize_failed_runs(data: Any) -> list[FailedRunSummary]:
                 title=title,
                 workflow_name=title,
                 branch=_pr_branch(item) if item.get("head") else "unknown",
+                author=_author_login(item),
                 url=str(item.get("html_url", "")),
                 updated_at=str(item.get("updated_at", "")),
             )
@@ -120,13 +122,29 @@ def _summarize_failed_runs(data: Any) -> list[FailedRunSummary]:
     return summaries
 
 
-def fetch_github_data(settings: Settings) -> GitHubFetchResult:
-    """Fetch open PRs and failed CI results for the configured repository."""
-    since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d")
+def fetch_failed_ci_runs(settings: Settings, hours: int = 24) -> list[FailedRunSummary]:
+    """Fetch failed CI runs for the configured repository within the last N hours."""
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d")
     failure_query = (
         f"repo:{settings.github_repo_full} is:pr status:failure updated:>{since}"
     )
 
+    failed_result = call_github_tool_sync(
+        settings.github_token,
+        "search_issues",
+        {
+            "query": failure_query,
+            "perPage": 30,
+            "sort": "updated",
+            "order": "desc",
+        },
+    )
+    failed_data = _parse_tool_json(failed_result, "search_issues")
+    return _summarize_failed_runs(failed_data)
+
+
+def fetch_github_data(settings: Settings) -> GitHubFetchResult:
+    """Fetch open PRs and failed CI results for the configured repository."""
     raw: dict[str, Any] = {}
     errors: list[str] = []
     open_prs: list[PullRequestSummary] = []
@@ -153,19 +171,8 @@ def fetch_github_data(settings: Settings) -> GitHubFetchResult:
         raw["open_pull_requests"] = {"error": str(error)}
 
     try:
-        failed_result = call_github_tool_sync(
-            settings.github_token,
-            "search_issues",
-            {
-                "query": failure_query,
-                "perPage": 30,
-                "sort": "updated",
-                "order": "desc",
-            },
-        )
-        failed_data = _parse_tool_json(failed_result, "search_issues")
-        raw["failed_ci"] = failed_data
-        failed_runs = _summarize_failed_runs(failed_data)
+        failed_runs = fetch_failed_ci_runs(settings)
+        raw["failed_ci"] = {"items": [asdict(run) for run in failed_runs]}
     except (GitHubFetchError, MCPConnectionError) as error:
         errors.append(f"failed CI: {error}")
         raw["failed_ci"] = {"error": str(error)}
@@ -222,6 +229,6 @@ def print_github_summary(result: GitHubFetchResult) -> None:
     if result.failed_runs:
         print("\nFailed runs:")
         for run in result.failed_runs:
-            print(f"- {run.workflow_name} | branch: {run.branch} | {run.url}")
+            print(f"- {run.workflow_name} | author: {run.author} | branch: {run.branch} | {run.url}")
     else:
         print("No failed CI runs in the last 24 hours.")

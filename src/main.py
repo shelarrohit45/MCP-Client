@@ -9,6 +9,7 @@ from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
+from workflows.ci_alert import CiAlertError, run_ci_alert
 from workflows.pr_events import check_pr_events, print_pr_events_summary
 from workflows.pr_notify import notify_new_pull_requests, print_pr_notify_summary
 
@@ -98,6 +99,11 @@ def check_action_server_command() -> None:
         sys.exit(1)
 
 
+def ci_alert_command(dry_run: bool) -> None:
+    settings = load_settings()
+    run_ci_alert(settings, dry_run=dry_run)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -148,6 +154,9 @@ def build_parser() -> argparse.ArgumentParser:
     pr_events.add_argument("--dry-run", action="store_true", help="Print emails without sending")
     pr_events.add_argument("--resend", action="store_true", help="Send again even if already notified")
     pr_events.add_argument("--pr", type=int, default=None, help="Only check this PR number")
+
+    ci_alert = subparsers.add_parser("ci-alert", help="Send email alert for failed CI runs (last 24h)")
+    ci_alert.add_argument("--dry-run", action="store_true", help="Print alert without sending")
     return parser
 
 
@@ -201,6 +210,10 @@ def main() -> None:
             check_action_server_command()
             return
 
+        if args.command == "ci-alert":
+            ci_alert_command(dry_run=args.dry_run)
+            return
+
         print_default_summary()
     except ConfigError as error:
         print(f"Configuration error: {error}")
@@ -210,6 +223,9 @@ def main() -> None:
         sys.exit(1)
     except EmailSendError as error:
         print(f"Email error: {error}")
+        sys.exit(1)
+    except CiAlertError as error:
+        print(f"CI alert error: {error}")
         sys.exit(1)
     except ActionServerError as error:
         print(f"Action server error: {error}")
