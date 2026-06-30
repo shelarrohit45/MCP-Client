@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "email": {
+      "command": "npx",
+      "args": ["-y", "@codefuturist/email-mcp", "stdio"]
+    }
+  }
+}

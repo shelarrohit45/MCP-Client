@@ -35,9 +35,11 @@ Mark each item when done. Complete steps in order.
 - [x] Sample JSON saved to `logs/github_sample.json`
 
 ## Step 5 — Email MCP Connect
-- [ ] Email MCP server configured
-- [ ] Email MCP tools listed
-- [ ] Test email received in inbox
+- [x] Email MCP server configured (via npx + project `.env`)
+- [x] `src/mcp_manager.py` extended for Email MCP
+- [x] `list-email-tools` command added
+- [x] `send-test-email` command added
+- [ ] Test email received in inbox (run `python src/main.py send-test-email`)
 
 ## Step 6 — CI Alert Workflow
 - [ ] Failed runs detected (last 24h)

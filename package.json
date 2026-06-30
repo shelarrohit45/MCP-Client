@@ -1,0 +1,8 @@
+{
+  "name": "mcp-client",
+  "private": true,
+  "description": "Node dependency for the Email MCP server",
+  "dependencies": {
+    "@codefuturist/email-mcp": "0.2.1"
+  }
+}
