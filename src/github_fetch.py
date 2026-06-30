@@ -201,6 +201,14 @@ def save_github_sample(result: GitHubFetchResult, path: Path | None = None) -> P
 def print_github_summary(result: GitHubFetchResult) -> None:
     """Print human-readable GitHub fetch summary."""
     print(f"Repository: {result.repo}")
+
+    if result.errors:
+        print("\nCould not fetch GitHub data. See warnings below.")
+        print("This usually means your token cannot access the repo (private repo / missing PAT permissions).")
+        for error in result.errors:
+            print(f"- {error}")
+        return
+
     print(f"Open PRs: {len(result.open_pull_requests)}")
 
     if result.open_pull_requests:
@@ -217,8 +225,3 @@ def print_github_summary(result: GitHubFetchResult) -> None:
             print(f"- {run.workflow_name} | branch: {run.branch} | {run.url}")
     else:
         print("No failed CI runs in the last 24 hours.")
-
-    if result.errors:
-        print("\nWarnings:")
-        for error in result.errors:
-            print(f"- {error}")
