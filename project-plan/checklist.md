@@ -12,11 +12,11 @@ Mark each item when done. Complete steps in order.
 - [x] `python3 scripts/check_prerequisites.py` passes
 
 ## Step 1 — Basic Project
-- [ ] Folder structure created (`src/`, `templates/`, `logs/`, `tests/`)
-- [ ] Virtual environment set up
-- [ ] `requirements.txt` created
-- [ ] `.gitignore` created
-- [ ] `python src/main.py` runs successfully
+- [x] Folder structure created (`src/`, `templates/`, `logs/`, `tests/`)
+- [x] Virtual environment set up (Python 3.12)
+- [x] `requirements.txt` created
+- [x] `.gitignore` created
+- [x] `python src/main.py` runs successfully
 
 ## Step 2 — Config System
 - [ ] `config/config.yaml` created
