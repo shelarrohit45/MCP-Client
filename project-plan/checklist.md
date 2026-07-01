@@ -78,6 +78,8 @@ Mark each item when done. Complete steps in order.
 - [ ] Firebase project + service account configured
 - [x] Step 11.2 code: `src/firebase_store.py` + `firebase-test` command
 - [ ] `python src/main.py firebase-test` writes to Firestore
+- [x] Step 11.3 code: `src/agent_chat.py` + `ask` command
+- [ ] Multi-turn `ask --session` works with Firebase history
 - [ ] Firebase project + Firestore enabled
 - [ ] `firebase-test` writes/reads from Firestore
 - [ ] `ask` command with natural language works

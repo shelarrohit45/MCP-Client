@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -20,6 +21,14 @@ DEFAULT_TIMEOUT_SECONDS = 60.0
 
 class LLMClientError(Exception):
     """Raised when an OpenRouter request fails."""
+
+
+@dataclass(frozen=True)
+class ChatResult:
+    content: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
 
 
 def _api_key(settings: Settings) -> str:
@@ -74,6 +83,24 @@ def chat(
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> str:
     """Send a chat completion request to OpenRouter and return assistant text."""
+    return chat_completion(
+        settings,
+        messages,
+        model=model,
+        max_retries=max_retries,
+        timeout_seconds=timeout_seconds,
+    ).content
+
+
+def chat_completion(
+    settings: Settings,
+    messages: list[dict[str, str]],
+    *,
+    model: str | None = None,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> ChatResult:
+    """Send a chat completion request and return text plus token usage."""
     api_key = _api_key(settings)
     chosen_model = _model(settings, model)
     headers = {
@@ -126,12 +153,20 @@ def chat(
             data = response.json()
             content = _extract_content(data)
             usage = data.get("usage") or {}
+            resolved_model = str(data.get("model", chosen_model))
+            prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
+            completion_tokens = int(usage.get("completion_tokens", 0) or 0)
             logger.info(
                 "openrouter_chat model=%s prompt_tokens=%s completion_tokens=%s",
-                data.get("model", chosen_model),
-                usage.get("prompt_tokens", "?"),
-                usage.get("completion_tokens", "?"),
+                resolved_model,
+                prompt_tokens,
+                completion_tokens,
             )
-            return content
+            return ChatResult(
+                content=content,
+                model=resolved_model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+            )
 
     raise LLMClientError(last_error)

@@ -5,6 +5,7 @@ import urllib.error
 import urllib.request
 
 from action_server import ActionServerError, run_action_server
+from agent_chat import AgentChatError, run_ask
 from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
@@ -151,6 +152,17 @@ def firebase_test_command() -> None:
     print("\nCheck Firebase Console → Firestore for these documents.")
 
 
+def ask_command(question: str, session_id: str | None) -> None:
+    settings = load_settings()
+    result = run_ask(settings, question, session_id=session_id)
+    print(f"Session: {result.session_id}")
+    print(f"Model: {result.model}")
+    if result.prior_message_count:
+        print(f"Loaded {result.prior_message_count} prior message(s) from Firebase.")
+    print(f"\n{result.response}")
+    print(f"\nResume this chat: python src/main.py ask --session {result.session_id} \"...\"")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -222,6 +234,17 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "firebase-test",
         help="Test Firebase Firestore read/write (Step 11.2)",
+    )
+
+    ask = subparsers.add_parser(
+        "ask",
+        help="Natural language chat with OpenRouter + Firebase memory (Step 11.3)",
+    )
+    ask.add_argument("question", help="Your question in plain English")
+    ask.add_argument(
+        "--session",
+        default=None,
+        help="Resume an existing chat session id from a previous ask command",
     )
     return parser
 
@@ -301,6 +324,10 @@ def main() -> None:
             firebase_test_command()
             return
 
+        if args.command == "ask":
+            ask_command(question=args.question, session_id=args.session)
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -336,6 +363,10 @@ def main() -> None:
         sys.exit(1)
     except FirebaseStoreError as error:
         cli_logger.error("firebase_store_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentChatError as error:
+        cli_logger.error("agent_chat_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI
