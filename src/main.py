@@ -154,13 +154,21 @@ def firebase_test_command() -> None:
     print("\nCheck Firebase Console → Firestore for these documents.")
 
 
-def ask_command(question: str, session_id: str | None, dry_run: bool) -> None:
+def ask_command(question: str, session_id: str | None, dry_run: bool, auto_approve: bool) -> None:
     settings = load_settings()
-    result = run_ask(settings, question, session_id=session_id, dry_run=dry_run)
+    result = run_ask(
+        settings,
+        question,
+        session_id=session_id,
+        dry_run=dry_run,
+        auto_approve=auto_approve,
+    )
     print(f"Session: {result.session_id}")
     print(f"Model: {result.model}")
     if dry_run:
         print("Mode: dry-run (preview tools only)")
+    if auto_approve:
+        print("Mode: auto-approve (sensitive actions run without prompt)")
     if result.prior_message_count:
         print(f"Loaded {result.prior_message_count} prior message(s) from Firebase.")
     if result.tools_called:
@@ -268,6 +276,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Preview mode: use preview tools only, no emails sent",
     )
+    ask.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip confirmation prompts for sensitive actions (send email, alerts)",
+    )
 
     agent_tools = subparsers.add_parser(
         "agent-tools",
@@ -357,7 +370,12 @@ def main() -> None:
             return
 
         if args.command == "ask":
-            ask_command(question=args.question, session_id=args.session, dry_run=args.dry_run)
+            ask_command(
+                question=args.question,
+                session_id=args.session,
+                dry_run=args.dry_run,
+                auto_approve=args.yes,
+            )
             return
 
         if args.command == "agent-tools":

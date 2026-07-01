@@ -89,6 +89,7 @@ def main() -> int:
                     "data": {"open_pull_requests": [{}, {}]},
                 },
             ),
+            patch("agent_loop.confirm_sensitive_tool", return_value=True),
         ):
             result = run_agent_loop(
                 settings,

@@ -84,6 +84,8 @@ Mark each item when done. Complete steps in order.
 - [ ] `python src/main.py agent-tools` lists all 7 tools
 - [x] Step 11.5 code: `src/agent_loop.py` + tool-calling `ask`
 - [ ] `ask` command calls tools and logs runs in Firestore
+- [x] Step 11.6 code: `src/agent_guardrails.py` + `--yes` flag
+- [ ] Sensitive `ask` actions prompt before sending email
 - [ ] Firebase project + Firestore enabled
 - [ ] `firebase-test` writes/reads from Firestore
 - [ ] `ask` command with natural language works

@@ -92,6 +92,7 @@ def run_ask(
     *,
     session_id: str | None = None,
     dry_run: bool = False,
+    auto_approve: bool = False,
 ) -> AskResult:
     """Run one agent turn with tool calling and Firebase session memory."""
     question = user_message.strip()
@@ -123,6 +124,8 @@ def run_ask(
             llm_messages,
             max_iterations=settings.agent_max_tool_iterations,
             dry_run=dry_run,
+            auto_approve=auto_approve,
+            session_id=active_session,
         )
 
         _save_tool_messages(

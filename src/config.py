@@ -42,6 +42,7 @@ class Settings:
     firebase_project_id: str | None
     firebase_credentials_path: Path
     agent_max_tool_iterations: int
+    agent_require_confirmation: bool
 
     @property
     def github_repo_full(self) -> str:
@@ -141,4 +142,11 @@ def load_settings(
         agent_max_tool_iterations=int(
             os.getenv("AGENT_MAX_TOOL_ITERATIONS", str(agent_cfg.get("max_tool_iterations", 5)))
         ),
+        agent_require_confirmation=str(
+            os.getenv(
+                "AGENT_REQUIRE_CONFIRMATION",
+                str(agent_cfg.get("require_confirmation", True)),
+            )
+        ).strip().lower()
+        in {"1", "true", "yes", "on"},
     )

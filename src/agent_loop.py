@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from agent_guardrails import confirm_sensitive_tool, denied_tool_result, is_sensitive_tool
 from agent_tools import execute_agent_tool, tool_schemas
 from app_logging import get_logger
 from config import Settings
@@ -51,6 +52,8 @@ def _execute_loop_tool(
     arguments: dict[str, Any],
     *,
     dry_run: bool,
+    auto_approve: bool,
+    session_id: str | None,
 ) -> dict[str, Any]:
     resolved = _resolve_tool_name(tool_name, dry_run=dry_run)
     if resolved is None:
@@ -60,6 +63,17 @@ def _execute_loop_tool(
             "summary": f"Tool '{tool_name}' is blocked in dry-run mode.",
             "error": "dry_run_blocked",
         }
+
+    if not dry_run and is_sensitive_tool(resolved):
+        if not confirm_sensitive_tool(
+            settings,
+            resolved,
+            auto_approve=auto_approve,
+            session_id=session_id,
+            require_confirmation=settings.agent_require_confirmation,
+        ):
+            return denied_tool_result(resolved)
+
     return execute_agent_tool(settings, resolved, arguments)
 
 
@@ -73,6 +87,8 @@ def run_agent_loop(
     *,
     max_iterations: int | None = None,
     dry_run: bool = False,
+    auto_approve: bool = False,
+    session_id: str | None = None,
 ) -> AgentLoopResult:
     """Run think → tool call → observe until the model returns a final answer."""
     limit = max_iterations or getattr(settings, "agent_max_tool_iterations", DEFAULT_MAX_TOOL_ITERATIONS)
@@ -114,7 +130,14 @@ def run_agent_loop(
 
             arguments = parse_tool_arguments(function.get("arguments"))
             logger.info("agent_tool_call tool=%s dry_run=%s", tool_name, dry_run)
-            result = _execute_loop_tool(settings, tool_name, arguments, dry_run=dry_run)
+            result = _execute_loop_tool(
+                settings,
+                tool_name,
+                arguments,
+                dry_run=dry_run,
+                auto_approve=auto_approve,
+                session_id=session_id,
+            )
             tools_called.append(tool_name)
 
             conversation.append(
