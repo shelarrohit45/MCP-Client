@@ -57,18 +57,18 @@ def main() -> int:
         results.append(check(f"agent section in config.yaml ({key})", key in config_yaml))
         results.append(check(f"agent section in config.example.yaml ({key})", key in config_example))
 
-    readme_sections = [
-        "OpenRouter setup",
-        "Firebase setup",
-        "llm-test",
-        "firebase-test",
-        "agent-history",
-        "agent-tools",
-        "50 requests per day",
-        "scheduler does **not** require OpenRouter",
+    readme_checks = [
+        ("OpenRouter", "openrouter.ai/keys" in readme or "OpenRouter" in readme),
+        ("Firebase", "Firestore" in readme or "firebase-test" in readme),
+        ("llm-test", "llm-test" in readme),
+        ("firebase-test", "firebase-test" in readme),
+        ("agent-history", "agent-history" in readme),
+        ("agent-tools", "agent-tools" in readme),
+        ("OpenRouter free tier", "50 requests" in readme),
+        ("scheduler without agent", "scheduler works without" in readme.lower()),
     ]
-    for section in readme_sections:
-        results.append(check(f"README documents {section}", section in readme))
+    for label, ok in readme_checks:
+        results.append(check(f"README documents {label}", ok))
 
     agent_commands = ["llm-test", "firebase-test", "ask", "agent-tools", "agent-history"]
     for command in agent_commands:

@@ -36,10 +36,11 @@ jobs:
       - name: Create minimal .env for config loader
         run: |
           cp .env.example .env
-          cat >> .env <<'EOF'
-          GITHUB_PERSONAL_ACCESS_TOKEN=ci-placeholder-token
-          EMAIL_PASSWORD=ci-placeholder-password
-          EOF
+          printf '%s\n' \
+            "GITHUB_PERSONAL_ACCESS_TOKEN=ci-placeholder-token" \
+            "EMAIL_PASSWORD=ci-placeholder-password" \
+            "ACTION_SECRET=ci-placeholder-action-secret-for-tests" \
+            >> .env
 
       - name: Run unit tests
         run: |
@@ -103,6 +104,7 @@ jobs:
           {
             echo "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_TOKEN"
             echo "EMAIL_PASSWORD=${EMAIL_PASS:-ci-placeholder-password}"
+            echo "ACTION_SECRET=ci-placeholder-action-secret-for-tests"
           } >> .env
 
       - name: Run integration tests
