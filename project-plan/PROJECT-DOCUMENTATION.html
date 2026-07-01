@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP DevOps Client — Complete Project Documentation</title>
+  <style>
+    :root {
+      --bg: #f6f8fa;
+      --card: #ffffff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #0969da;
+      --accent-dark: #0550ae;
+      --success: #1a7f37;
+      --warning: #9a6700;
+      --code-bg: #f0f3f6;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; color: var(--accent-dark); }
+    .layout { display: flex; min-height: 100vh; }
+    nav.sidebar {
+      width: var(--sidebar-w);
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    nav.sidebar h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin: 0 0 12px 8px;
+    }
+    nav.sidebar ul { list-style: none; padding: 0; margin: 0 0 24px; }
+    nav.sidebar li { margin: 2px 0; }
+    nav.sidebar a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    nav.sidebar a:hover { background: var(--code-bg); text-decoration: none; }
+    main {
+      flex: 1;
+      max-width: 920px;
+      padding: 32px 40px 80px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0550ae 0%, #0969da 100%);
+      color: #fff;
+      padding: 40px 36px;
+      border-radius: 12px;
+      margin-bottom: 32px;
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 28px; }
+    .hero p { margin: 0; opacity: 0.92; font-size: 16px; }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-top: 12px;
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    section h2 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--bg);
+    }
+    section h3 { margin: 24px 0 10px; font-size: 17px; color: var(--accent-dark); }
+    section h4 { margin: 16px 0 8px; font-size: 15px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 16px; padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--code-bg); font-weight: 600; }
+    tr:nth-child(even) td { background: #fafbfc; }
+    code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+    pre {
+      background: #161b22;
+      color: #e6edf3;
+      padding: 16px 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 12px 0 20px;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: #ddf4ff;
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .callout.warn {
+      border-color: #bf8700;
+      background: #fff8c5;
+    }
+    .callout.ok {
+      border-color: var(--success);
+      background: #dafbe1;
+    }
+    .step-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      background: #fafbfc;
+    }
+    .step-card h4 { margin-top: 0; color: var(--accent-dark); }
+    .file-tree {
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      background: var(--code-bg);
+      padding: 16px 20px;
+      border-radius: 8px;
+      white-space: pre;
+      line-height: 1.7;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #ddf4ff;
+      color: var(--accent-dark);
+      margin-right: 6px;
+    }
+    .tag.green { background: #dafbe1; color: var(--success); }
+    .tag.orange { background: #fff1c2; color: var(--warning); }
+    .cmd-required { color: var(--success); font-weight: 600; }
+    .cmd-optional { color: var(--muted); }
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; }
+      nav.sidebar { width: 100%; height: auto; position: static; }
+      main { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <h2>Contents</h2>
+  <ul>
+    <li><a href="#overview">1. Overview</a></li>
+    <li><a href="#architecture">2. Architecture</a></li>
+    <li><a href="#setup">3. Setup Guide</a></li>
+    <li><a href="#config">4. Configuration</a></li>
+    <li><a href="#steps">5. What We Built (Steps 0–10)</a></li>
+    <li><a href="#files">6. File Reference</a></li>
+    <li><a href="#commands">7. All CLI Commands</a></li>
+    <li><a href="#terminals">8. Terminals to Keep Running</a></li>
+    <li><a href="#workflows">9. Workflows Explained</a></li>
+    <li><a href="#logs">10. Logs &amp; State</a></li>
+    <li><a href="#troubleshooting">11. Troubleshooting</a></li>
+    <li><a href="#tests">12. Test Scripts</a></li>
+  </ul>
+  <h2>Quick Start</h2>
+  <ul>
+    <li><a href="#terminals">Run 2–3 terminals</a></li>
+    <li><a href="#commands">Command list</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<header class="hero" id="top">
+  <h1>MCP DevOps Client</h1>
+  <p>Complete project documentation — what we built, how we built it, where everything lives, and which commands to run.</p>
+  <span class="badge">Repo: shelarrohit45/MCP-Client</span>
+  <span class="badge">Email: shelarrohit78@gmail.com → rohitluckyrs45@gmail.com</span>
+  <span class="badge">Status: Project Complete (Steps 0–10)</span>
+</header>
+
+<!-- SECTION 1 -->
+<section id="overview">
+  <h2>1. Project Overview</h2>
+  <p>
+    <strong>MCP DevOps Client</strong> is a Python application that connects to two MCP (Model Context Protocol) servers —
+    <strong>GitHub MCP</strong> and <strong>Email MCP</strong> — to automate repository monitoring and email notifications.
+    No AWS or cloud hosting is required; everything runs locally on your Mac.
+  </p>
+
+  <h3>What the project does</h3>
+  <ul>
+    <li>Fetches GitHub data: open PRs, CI failures/successes, open issues, latest release</li>
+    <li>Sends <strong>CI failure alert</strong> emails when checks fail (last 24 hours)</li>
+    <li>Sends a <strong>daily digest</strong> email summarizing repo activity</li>
+    <li>Sends <strong>PR event</strong> emails: created, pushed, merged, rejected, approved, changes requested, CI passed/failed</li>
+    <li>Supports <strong>Merge/Reject</strong> buttons in PR emails via a local HTTP action server</li>
+    <li>Prevents duplicate CI alerts using a state file</li>
+    <li>Runs digest and CI checks on a schedule via APScheduler</li>
+    <li>Logs all activity to <code>logs/app.log</code></li>
+  </ul>
+
+  <h3>Technology stack</h3>
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>Language</td><td>Python 3.12</td></tr>
+    <tr><td>MCP SDK</td><td><code>mcp</code> Python package</td></tr>
+    <tr><td>GitHub MCP</td><td><code>github-mcp-server</code> (local binary in <code>bin/</code>)</td></tr>
+    <tr><td>Email MCP</td><td><code>@codefuturist/email-mcp</code> (Node.js via <code>node_modules</code>)</td></tr>
+    <tr><td>Config</td><td>YAML (<code>config/config.yaml</code>) + <code>.env</code> secrets</td></tr>
+    <tr><td>Email templates</td><td>Jinja2 HTML (<code>templates/</code>)</td></tr>
+    <tr><td>Scheduler</td><td>APScheduler (<code>src/scheduler.py</code>)</td></tr>
+  </table>
+</section>
+
+<!-- SECTION 2 -->
+<section id="architecture">
+  <h2>2. Architecture</h2>
+
+  <h3>Data flow</h3>
+  <pre><code>┌─────────────┐     MCP (stdio)     ┌──────────────────┐
+│  src/main   │ ◄──────────────────►│  GitHub MCP      │
+│  (CLI)      │                     │  (PRs, CI, etc.) │
+└──────┬──────┘                     └──────────────────┘
+       │
+       │  workflows/
+       ▼
+┌──────────────┐     MCP (stdio)     ┌──────────────────┐
+│ ci_alert     │ ◄──────────────────►│  Email MCP       │
+│ daily_digest │                     │  (SMTP send)     │
+│ pr_events    │                     └──────────────────┘
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│ Gmail inbox  │  receiver: rohitluckyrs45@gmail.com
+└──────────────┘</code></pre>
+
+  <h3>Key modules</h3>
+  <table>
+    <tr><th>Module</th><th>Location</th><th>Role</th></tr>
+    <tr><td><code>main.py</code></td><td><code>src/</code></td><td>CLI entry point — all commands</td></tr>
+    <tr><td><code>config.py</code></td><td><code>src/</code></td><td>Loads YAML + .env into Settings</td></tr>
+    <tr><td><code>mcp_manager.py</code></td><td><code>src/</code></td><td>Starts MCP servers, calls tools</td></tr>
+    <tr><td><code>github_fetch.py</code></td><td><code>src/</code></td><td>Fetches PRs, CI, issues, releases</td></tr>
+    <tr><td><code>email_client.py</code></td><td><code>src/</code></td><td>Sends emails via Email MCP</td></tr>
+    <tr><td><code>template_renderer.py</code></td><td><code>src/</code></td><td>Renders Jinja2 HTML templates</td></tr>
+    <tr><td><code>scheduler.py</code></td><td><code>src/</code></td><td>APScheduler — digest + CI jobs</td></tr>
+    <tr><td><code>workflows/</code></td><td><code>src/workflows/</code></td><td>ci_alert, daily_digest, pr_events, pr_notify</td></tr>
+  </table>
+</section>
+
+<!-- SECTION 3 -->
+<section id="setup">
+  <h2>3. Setup Guide (From Scratch)</h2>
+
+  <h3>Step-by-step first-time setup</h3>
+  <ol>
+    <li>Clone or open the project folder</li>
+    <li>Create virtual environment and install dependencies</li>
+    <li>Copy and edit config files</li>
+    <li>Install MCP servers</li>
+    <li>Verify connections</li>
+    <li>Start the required terminal processes</li>
+  </ol>
+
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+
+# Virtual environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configuration
+cp config/config.example.yaml config/config.yaml
+cp .env.example .env
+# Edit config/config.yaml and .env with your values
+
+# Install MCP servers
+./scripts/install_github_mcp.sh
+./scripts/install_email_mcp.sh
+python scripts/setup_email_mcp_config.py
+
+# Verify prerequisites
+python scripts/check_prerequisites.py
+
+# Verify connections
+python src/main.py list-github-tools
+python src/main.py list-email-tools
+python src/main.py send-test-email</code></pre>
+
+  <div class="callout ok">
+    <strong>Prerequisites check:</strong> Run <code>python scripts/check_prerequisites.py</code> to verify Python, Node.js, config files, and tokens.
+  </div>
+</section>
+
+<!-- SECTION 4 -->
+<section id="config">
+  <h2>4. Configuration</h2>
+
+  <h3><code>config/config.yaml</code></h3>
+  <pre><code>github:
+  owner: "shelarrohit45"
+  repo: "MCP-Client"
+
+email:
+  sender: "shelarrohit78@gmail.com"
+  receiver: "rohitluckyrs45@gmail.com"
+
+schedule:
+  digest_time: "21:20"                  # Daily digest at 9:20 PM local time
+  ci_check_interval_minutes: 30         # CI alert check every 30 minutes
+
+pr_notify:
+  action_base_url: "http://127.0.0.1:8765"
+  action_port: 8765
+  check_interval_minutes: 5             # PR watch interval</code></pre>
+
+  <h3><code>.env</code> (secrets — never commit)</h3>
+  <table>
+    <tr><th>Variable</th><th>Purpose</th></tr>
+    <tr><td><code>GITHUB_PERSONAL_ACCESS_TOKEN</code></td><td>GitHub PAT with <code>repo</code> scope (write for Merge/Reject)</td></tr>
+    <tr><td><code>EMAIL_PASSWORD</code></td><td>Gmail app password for sender account</td></tr>
+    <tr><td><code>ACTION_SECRET</code></td><td>Random secret for PR action links (<code>openssl rand -hex 32</code>)</td></tr>
+    <tr><td><code>ACTION_BASE_URL</code></td><td>URL for Merge/Reject links (use ngrok for phone)</td></tr>
+    <tr><td><code>EMAIL_SMTP_HOST/PORT</code></td><td>Default: smtp.gmail.com:587</td></tr>
+    <tr><td><code>EMAIL_IMAP_HOST/PORT</code></td><td>Default: imap.gmail.com:993</td></tr>
+  </table>
+
+  <h3>Email MCP config</h3>
+  <p>Generated at <code>config/email-mcp/config.toml</code> (gitignored) by <code>scripts/setup_email_mcp_config.py</code>.</p>
+</section>
+
+<!-- SECTION 5 -->
+<section id="steps">
+  <h2>5. What We Built — Steps 0 to 10</h2>
+  <p>Each step below describes <strong>what</strong> was done, <strong>how</strong>, and <strong>where</strong> (files created or modified).</p>
+
+  <div class="step-card" id="step-0">
+    <h4>Step 0 — Prerequisites</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> GitHub repo, PAT, Gmail accounts, Python 3.12, Node.js, .env file.</p>
+    <p><strong>Where:</strong> <code>.env</code>, <code>config/config.yaml</code>, <code>scripts/check_prerequisites.py</code></p>
+    <p><strong>Command:</strong> <code>python scripts/check_prerequisites.py</code></p>
+  </div>
+
+  <div class="step-card" id="step-1">
+    <h4>Step 1 — Basic Project</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Folder structure, venv, requirements.txt, .gitignore, hello CLI.</p>
+    <p><strong>Where:</strong> <code>src/main.py</code>, <code>requirements.txt</code>, <code>logs/</code>, <code>templates/</code></p>
+    <p><strong>Command:</strong> <code>python src/main.py</code> (prints config summary)</p>
+  </div>
+
+  <div class="step-card" id="step-2">
+    <h4>Step 2 — Config System</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> YAML + .env loader with Settings dataclass.</p>
+    <p><strong>How:</strong> <code>config.py</code> uses <code>pyyaml</code> and <code>python-dotenv</code>.</p>
+    <p><strong>Where:</strong> <code>src/config.py</code>, <code>config/config.yaml</code>, <code>.env.example</code></p>
+    <p><strong>Command:</strong> <code>python scripts/test_step02.py</code></p>
+  </div>
+
+  <div class="step-card" id="step-3">
+    <h4>Step 3 — GitHub MCP Connect</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Connect to GitHub MCP server over stdio, list available tools.</p>
+    <p><strong>How:</strong> <code>mcp_manager.py</code> launches <code>bin/github-mcp-server</code> with PAT in env.</p>
+    <p><strong>Where:</strong> <code>src/mcp_manager.py</code>, <code>scripts/install_github_mcp.sh</code>, <code>bin/github-mcp-server</code></p>
+    <p><strong>Command:</strong> <code>python src/main.py list-github-tools</code></p>
+  </div>
+
+  <div class="step-card" id="step-4">
+    <h4>Step 4 — GitHub Data Fetch</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Fetch open PRs and failed CI runs, save sample JSON.</p>
+    <p><strong>How:</strong> Uses MCP tools <code>list_pull_requests</code> and <code>search_issues</code> (status:failure).</p>
+    <p><strong>Where:</strong> <code>src/github_fetch.py</code>, output <code>logs/github_sample.json</code></p>
+    <p><strong>Command:</strong> <code>python src/main.py fetch-github</code></p>
+  </div>
+
+  <div class="step-card" id="step-5">
+    <h4>Step 5 — Email MCP Connect</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Connect to Email MCP, send test email.</p>
+    <p><strong>How:</strong> Launches <code>@codefuturist/email-mcp</code> via local node_modules; config in <code>config/email-mcp/config.toml</code>.</p>
+    <p><strong>Where:</strong> <code>src/email_client.py</code>, <code>src/email_mcp_config.py</code>, <code>scripts/install_email_mcp.sh</code></p>
+    <p><strong>Commands:</strong></p>
+    <ul>
+      <li><code>python src/main.py list-email-tools</code></li>
+      <li><code>python src/main.py send-test-email</code></li>
+    </ul>
+  </div>
+
+  <div class="step-card" id="step-6">
+    <h4>Step 6 — CI Alert Workflow</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Detect failed CI (last 24h) and email alert.</p>
+    <p><strong>Where:</strong> <code>src/workflows/ci_alert.py</code></p>
+    <p><strong>Commands:</strong></p>
+    <ul>
+      <li><code>python src/main.py ci-alert</code> — send alert</li>
+      <li><code>python src/main.py ci-alert --dry-run</code> — preview only</li>
+    </ul>
+  </div>
+
+  <div class="step-card" id="step-7">
+    <h4>Step 7 — HTML Templates</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Jinja2 HTML emails for CI alerts.</p>
+    <p><strong>Where:</strong> <code>templates/ci_alert.html</code>, <code>src/template_renderer.py</code></p>
+    <p><strong>Command:</strong> <code>python scripts/test_step07.py</code></p>
+  </div>
+
+  <div class="step-card" id="step-8">
+    <h4>Step 8 — Daily Digest</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Daily summary email: open PRs, issues, CI pass/fail, latest release.</p>
+    <p><strong>Where:</strong> <code>src/workflows/daily_digest.py</code>, <code>templates/digest.html</code></p>
+    <p><strong>Subject:</strong> <code>[Daily Digest] owner/repo — YYYY-MM-DD</code></p>
+    <p><strong>Commands:</strong></p>
+    <ul>
+      <li><code>python src/main.py digest --dry-run</code></li>
+      <li><code>python src/main.py digest --send</code></li>
+    </ul>
+  </div>
+
+  <div class="step-card" id="step-9">
+    <h4>Step 9 — Logging + Duplicate Protection</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> Structured logging, state file, skip duplicate CI alerts.</p>
+    <p><strong>Where:</strong></p>
+    <ul>
+      <li><code>src/app_logging.py</code> → <code>logs/app.log</code></li>
+      <li><code>src/workflow_state.py</code> → <code>logs/state.json</code></li>
+      <li><code>src/error_messages.py</code> → clear CLI error messages</li>
+    </ul>
+    <p><strong>How dedup works:</strong> Each CI failure gets a <code>run_id</code> (<code>{issue_id}:{updated_at}</code>). Already-alerted IDs in <code>logs/state.json</code> are skipped.</p>
+    <p><strong>Command:</strong> <code>python scripts/test_step09.py</code></p>
+  </div>
+
+  <div class="step-card" id="step-10">
+    <h4>Step 10 — Scheduler + Documentation</h4>
+    <p><span class="tag green">Done</span></p>
+    <p><strong>What:</strong> APScheduler for automated digest + CI checks; project README.</p>
+    <p><strong>Where:</strong> <code>src/scheduler.py</code>, <code>README.md</code></p>
+    <p><strong>Schedule:</strong></p>
+    <ul>
+      <li>Daily digest at <code>21:20</code> (9:20 PM, from config)</li>
+      <li>CI alert check every <code>30</code> minutes</li>
+    </ul>
+    <p><strong>Command:</strong> <code>python src/main.py run-scheduler</code></p>
+  </div>
+
+  <h3>Bonus features (beyond original plan)</h3>
+  <table>
+    <tr><th>Feature</th><th>Files</th><th>Commands</th></tr>
+    <tr>
+      <td>Full PR event notifications</td>
+      <td><code>pr_events.py</code>, <code>pr_event_state.py</code>, <code>pr_event_emails.py</code>, <code>github_pr.py</code></td>
+      <td><code>pr-events</code>, <code>pr-watch</code></td>
+    </tr>
+    <tr>
+      <td>Merge/Reject from email</td>
+      <td><code>action_server.py</code>, <code>action_tokens.py</code></td>
+      <td><code>action-server</code>, <code>check-action-server</code></td>
+    </tr>
+    <tr>
+      <td>New PR notify</td>
+      <td><code>pr_notify.py</code>, <code>pr_state.py</code></td>
+      <td><code>pr-notify</code></td>
+    </tr>
+  </table>
+</section>
+
+<!-- SECTION 6 -->
+<section id="files">
+  <h2>6. Complete File Reference</h2>
+  <div class="file-tree">mcp-client/
+├── src/
+│   ├── main.py                 # CLI entry — all commands
+│   ├── config.py               # Settings from YAML + .env
+│   ├── mcp_manager.py          # GitHub + Email MCP connections
+│   ├── github_fetch.py         # PRs, CI, issues, releases
+│   ├── github_pr.py            # PR details, reviews, merge
+│   ├── email_client.py         # send_email() via Email MCP
+│   ├── email_mcp_config.py     # Email MCP TOML config
+│   ├── template_renderer.py    # Jinja2 HTML rendering
+│   ├── scheduler.py            # APScheduler jobs
+│   ├── app_logging.py          # logs/app.log
+│   ├── workflow_state.py       # logs/state.json (CI dedup)
+│   ├── error_messages.py       # User-friendly errors
+│   ├── action_server.py        # HTTP server for Merge/Reject
+│   ├── action_tokens.py        # Signed action tokens
+│   ├── pr_state.py             # PR notify state
+│   ├── pr_event_state.py       # PR event snapshots + dedup
+│   ├── pr_event_emails.py      # PR event email builders
+│   └── workflows/
+│       ├── ci_alert.py         # CI failure alerts
+│       ├── daily_digest.py     # Daily digest email
+│       ├── pr_events.py        # PR event detector
+│       └── pr_notify.py        # New PR notifications
+├── config/
+│   ├── config.yaml             # Non-secret settings
+│   ├── config.example.yaml
+│   └── email-mcp/config.toml   # Email MCP (gitignored)
+├── templates/
+│   ├── ci_alert.html           # CI failure email template
+│   └── digest.html             # Daily digest email template
+├── logs/                       # gitignored
+│   ├── app.log                 # Application logs
+│   ├── state.json              # CI alert dedup state
+│   ├── github_sample.json      # fetch-github output
+│   ├── pr_event_state.json     # PR event dedup
+│   └── pr_notify_state.json    # PR notify dedup
+├── scripts/
+│   ├── install_github_mcp.sh
+│   ├── install_email_mcp.sh
+│   ├── setup_email_mcp_config.py
+│   ├── check_prerequisites.py
+│   └── test_step01.py … test_step10.py
+├── bin/github-mcp-server       # GitHub MCP binary
+├── node_modules/               # Email MCP (gitignored)
+├── requirements.txt
+├── .env                        # Secrets (gitignored)
+├── README.md
+└── project-plan/               # Build plan + this document</div>
+</section>
+
+<!-- SECTION 7 -->
+<section id="commands">
+  <h2>7. All CLI Commands</h2>
+  <p>Run all commands from project root with venv activated:</p>
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+source venv/bin/activate</code></pre>
+
+  <h3>Setup &amp; verification (run once)</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>python scripts/check_prerequisites.py</code></td><td>Verify Python, Node, config files</td></tr>
+    <tr><td><code>python src/main.py list-github-tools</code></td><td>List GitHub MCP tools</td></tr>
+    <tr><td><code>python src/main.py list-email-tools</code></td><td>List Email MCP tools</td></tr>
+    <tr><td><code>python src/main.py send-test-email</code></td><td>Send test email to receiver</td></tr>
+    <tr><td><code>python src/main.py fetch-github</code></td><td>Fetch PRs + CI, save to logs/</td></tr>
+  </table>
+
+  <h3>Workflow commands (manual / on-demand)</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>python src/main.py ci-alert</code></td><td>Send CI failure alert (skips duplicates)</td></tr>
+    <tr><td><code>python src/main.py ci-alert --dry-run</code></td><td>Preview CI alert without sending</td></tr>
+    <tr><td><code>python src/main.py digest --dry-run</code></td><td>Preview daily digest HTML</td></tr>
+    <tr><td><code>python src/main.py digest --send</code></td><td>Send daily digest email</td></tr>
+    <tr><td><code>python src/main.py pr-notify</code></td><td>Notify for new open PRs</td></tr>
+    <tr><td><code>python src/main.py pr-notify --dry-run</code></td><td>Preview PR notifications</td></tr>
+    <tr><td><code>python src/main.py pr-notify --resend --pr N</code></td><td>Resend notification for PR #N</td></tr>
+    <tr><td><code>python src/main.py pr-events</code></td><td>Check all PR events once</td></tr>
+    <tr><td><code>python src/main.py pr-events --dry-run</code></td><td>Preview PR events without sending</td></tr>
+  </table>
+
+  <h3>Long-running commands (keep terminal open)</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th><th>Interval</th></tr>
+    <tr>
+      <td class="cmd-required"><code>python src/main.py run-scheduler</code></td>
+      <td>Digest at 21:20 + CI check every 30 min</td>
+      <td>Automated</td>
+    </tr>
+    <tr>
+      <td class="cmd-required"><code>python src/main.py pr-watch</code></td>
+      <td>Poll PR events and send emails</td>
+      <td>Every 5 min (config)</td>
+    </tr>
+    <tr>
+      <td class="cmd-optional"><code>python src/main.py action-server</code></td>
+      <td>Merge/Reject links in PR emails</td>
+      <td>Always on</td>
+    </tr>
+  </table>
+
+  <h3>Utility commands</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>python src/main.py check-action-server</code></td><td>Test if action server is reachable</td></tr>
+    <tr><td><code>python src/main.py</code></td><td>Print config summary (no subcommand)</td></tr>
+    <tr><td><code>python src/main.py --help</code></td><td>List all commands</td></tr>
+  </table>
+</section>
+
+<!-- SECTION 8 -->
+<section id="terminals">
+  <h2>8. Terminals You Need to Keep Running</h2>
+
+  <div class="callout">
+    <strong>Minimum (1 terminal):</strong> Only digest + CI automation.<br>
+    <strong>Recommended (2 terminals):</strong> Scheduler + PR watch.<br>
+    <strong>Full setup (3 terminals):</strong> Scheduler + PR watch + action server.
+  </div>
+
+  <h3>Terminal 1 — <span class="cmd-required">Required</span></h3>
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+source venv/bin/activate
+python src/main.py run-scheduler</code></pre>
+  <ul>
+    <li>Daily digest at <strong>21:20</strong> (9:20 PM) local time</li>
+    <li>CI alert check every <strong>30 minutes</strong></li>
+    <li>Press <code>Ctrl+C</code> to stop</li>
+  </ul>
+
+  <h3>Terminal 2 — <span class="cmd-required">Recommended</span></h3>
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+source venv/bin/activate
+python src/main.py pr-watch</code></pre>
+  <ul>
+    <li>PR event emails every <strong>5 minutes</strong></li>
+    <li>Events: created, pushed, merged, rejected, approved, CI pass/fail, etc.</li>
+  </ul>
+
+  <h3>Terminal 3 — <span class="cmd-optional">Optional</span> (Merge/Reject from email)</h3>
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+source venv/bin/activate
+python src/main.py action-server</code></pre>
+  <ul>
+    <li>Required for Merge/Reject buttons in PR emails</li>
+    <li>For phone: set <code>ACTION_BASE_URL</code> in .env to ngrok HTTPS URL</li>
+  </ul>
+
+  <h3>Summary table</h3>
+  <table>
+    <tr><th>#</th><th>Command</th><th>Required?</th><th>Purpose</th></tr>
+    <tr><td>1</td><td><code>run-scheduler</code></td><td>Yes</td><td>Digest + CI alerts on schedule</td></tr>
+    <tr><td>2</td><td><code>pr-watch</code></td><td>Recommended</td><td>PR event email notifications</td></tr>
+    <tr><td>3</td><td><code>action-server</code></td><td>Optional</td><td>Merge/Reject links in emails</td></tr>
+  </table>
+
+  <div class="callout warn">
+    <strong>Important:</strong> If you close these terminals, automation stops. For 24/7 operation, use cron, launchd (macOS), or a process manager — see README.md for cron examples.
+  </div>
+</section>
+
+<!-- SECTION 9 -->
+<section id="workflows">
+  <h2>9. Workflows Explained</h2>
+
+  <h3>CI Alert (<code>ci_alert.py</code>)</h3>
+  <ol>
+    <li>Search GitHub for PRs with <code>status:failure</code> in last 24h</li>
+    <li>Filter out failures already in <code>logs/state.json</code></li>
+    <li>Render <code>templates/ci_alert.html</code></li>
+    <li>Send HTML email via Email MCP</li>
+    <li>Save alerted run IDs to state</li>
+  </ol>
+
+  <h3>Daily Digest (<code>daily_digest.py</code>)</h3>
+  <ol>
+    <li>Fetch open PRs, open issues count, failed/successful CI (24h), latest release</li>
+    <li>Render <code>templates/digest.html</code> (handles empty sections)</li>
+    <li>Send with subject <code>[Daily Digest] owner/repo — date</code></li>
+  </ol>
+
+  <h3>PR Events (<code>pr_events.py</code>)</h3>
+  <ol>
+    <li>Load previous PR snapshots from <code>logs/pr_event_state.json</code></li>
+    <li>Compare with current PR state from GitHub</li>
+    <li>Detect: created, pushed, merged, rejected, reopened, approved, changes_requested, ci_failed, ci_passed</li>
+    <li>Send email for new events only (dedup via event keys)</li>
+  </ol>
+
+  <h3>Scheduler (<code>scheduler.py</code>)</h3>
+  <ol>
+    <li>Uses APScheduler BlockingScheduler</li>
+    <li>Job 1: <code>run_daily_digest(send=True)</code> — cron at digest_time</li>
+    <li>Job 2: <code>run_ci_alert()</code> — interval every N minutes</li>
+    <li>Errors are logged; scheduler keeps running</li>
+  </ol>
+</section>
+
+<!-- SECTION 10 -->
+<section id="logs">
+  <h2>10. Logs &amp; State Files</h2>
+  <table>
+    <tr><th>File</th><th>Purpose</th><th>Updated by</th></tr>
+    <tr><td><code>logs/app.log</code></td><td>All workflow runs, MCP tool calls, errors</td><td>Every command</td></tr>
+    <tr><td><code>logs/state.json</code></td><td>CI alert dedup (<code>alerted_run_ids</code>)</td><td><code>ci-alert</code> after send</td></tr>
+    <tr><td><code>logs/pr_event_state.json</code></td><td>PR snapshots + sent event keys</td><td><code>pr-watch</code>, <code>pr-events</code></td></tr>
+    <tr><td><code>logs/pr_notify_state.json</code></td><td>Which PRs were notified as new</td><td><code>pr-notify</code></td></tr>
+    <tr><td><code>logs/github_sample.json</code></td><td>Sample fetch output</td><td><code>fetch-github</code></td></tr>
+  </table>
+  <pre><code># Watch logs live
+tail -f logs/app.log
+
+# View CI dedup state
+cat logs/state.json</code></pre>
+</section>
+
+<!-- SECTION 11 -->
+<section id="troubleshooting">
+  <h2>11. Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Solution</th></tr>
+    <tr><td>GitHub MCP not found</td><td>Run <code>./scripts/install_github_mcp.sh</code></td></tr>
+    <tr><td>Private repo returns empty data</td><td>PAT needs <code>repo</code> read scope</td></tr>
+    <tr><td>Email MCP connection failed</td><td>Check <code>EMAIL_PASSWORD</code> (Gmail app password)</td></tr>
+    <tr><td>Merge/Reject returns 403</td><td>PAT needs Pull requests + Contents <strong>write</strong></td></tr>
+    <tr><td>Email links don't work on phone</td><td>Start <code>action-server</code>; set <code>ACTION_BASE_URL</code> to ngrok URL</td></tr>
+    <tr><td>Duplicate CI alerts</td><td>Should not happen — check <code>logs/state.json</code></td></tr>
+    <tr><td>No releases in digest</td><td>Normal if repo has no GitHub releases</td></tr>
+    <tr><td>Scheduler stopped</td><td>Re-run <code>run-scheduler</code> in a terminal</td></tr>
+    <tr><td><code>unhandled errors in TaskGroup</code></td><td>Usually MCP shutdown noise; fixed for 404 releases</td></tr>
+  </table>
+</section>
+
+<!-- SECTION 12 -->
+<section id="tests">
+  <h2>12. Test Scripts</h2>
+  <p>Run these to verify each build step:</p>
+  <pre><code>python scripts/test_step01.py
+python scripts/test_step02.py
+python scripts/test_step03.py
+python scripts/test_step04.py
+python scripts/test_step05.py
+python scripts/test_step06.py
+python scripts/test_step07.py
+python scripts/test_step08.py
+python scripts/test_step09.py
+python scripts/test_step10.py</code></pre>
+</section>
+
+<footer style="text-align:center;color:var(--muted);font-size:13px;padding:24px 0;">
+  MCP DevOps Client — Project Documentation<br>
+  Generated for shelarrohit45/MCP-Client · Steps 0–10 complete
+</footer>
+
+</main>
+</div>
+</body>
+</html>
