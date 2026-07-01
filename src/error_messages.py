@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from email_client import EmailSendError
+from firebase_store import FirebaseStoreError
 from github_fetch import GitHubFetchError
 from llm_client import LLMClientError
 from mcp_manager import MCPConnectionError
@@ -54,6 +55,19 @@ def format_error_for_user(error: Exception) -> str:
                 f"Details: {message}"
             )
         return f"OpenRouter LLM error: {message}"
+
+    if isinstance(error, FirebaseStoreError):
+        if "credentials file not found" in lower:
+            return (
+                "Firebase service account JSON not found. Download it from Firebase Console "
+                "and save as config/firebase-service-account.json."
+            )
+        if "missing firebase_project_id" in lower:
+            return (
+                "Firebase project ID missing. Add FIREBASE_PROJECT_ID to .env "
+                "(Firebase Console → Project settings)."
+            )
+        return f"Firebase error: {message}"
 
     if "401" in message or "bad credentials" in lower:
         return "Authentication failed. Check GITHUB_TOKEN or email credentials in .env."

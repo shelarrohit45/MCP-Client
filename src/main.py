@@ -9,6 +9,7 @@ from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
 from error_messages import format_error_for_user
+from firebase_store import FirebaseStoreError, run_firebase_connectivity_test
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
 from llm_client import LLMClientError, chat as llm_chat
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
@@ -136,6 +137,20 @@ def llm_test_command() -> None:
     print(f"Response: {response}")
 
 
+def firebase_test_command() -> None:
+    settings = load_settings()
+    print(f"Project: {settings.firebase_project_id}")
+    print("Running Firestore connectivity test...")
+    result = run_firebase_connectivity_test(settings)
+    print("Firebase connection OK.")
+    print(f"Session ID: {result['session_id']}")
+    print(f"Message ID: {result['message_id']}")
+    print(f"Agent run ID: {result['run_id']}")
+    print(f"Workflow history ID: {result['history_id']}")
+    print(f"Messages read back: {result['message_count']}")
+    print("\nCheck Firebase Console → Firestore for these documents.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -202,6 +217,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "llm-test",
         help="Test OpenRouter LLM connection (Step 11.1)",
+    )
+
+    subparsers.add_parser(
+        "firebase-test",
+        help="Test Firebase Firestore read/write (Step 11.2)",
     )
     return parser
 
@@ -277,6 +297,10 @@ def main() -> None:
             llm_test_command()
             return
 
+        if args.command == "firebase-test":
+            firebase_test_command()
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -308,6 +332,10 @@ def main() -> None:
         sys.exit(1)
     except LLMClientError as error:
         cli_logger.error("llm_client_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except FirebaseStoreError as error:
+        cli_logger.error("firebase_store_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI

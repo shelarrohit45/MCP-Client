@@ -75,6 +75,9 @@ Mark each item when done. Complete steps in order.
 - [ ] OpenRouter API key configured (`OPENROUTER_API_KEY`)
 - [x] Step 11.1 code: `src/llm_client.py` + `llm-test` command
 - [ ] `python src/main.py llm-test` returns live OpenRouter response
+- [ ] Firebase project + service account configured
+- [x] Step 11.2 code: `src/firebase_store.py` + `firebase-test` command
+- [ ] `python src/main.py firebase-test` writes to Firestore
 - [ ] Firebase project + Firestore enabled
 - [ ] `firebase-test` writes/reads from Firestore
 - [ ] `ask` command with natural language works

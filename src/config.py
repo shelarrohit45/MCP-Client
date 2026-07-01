@@ -39,6 +39,8 @@ class Settings:
     pr_check_interval_minutes: int
     openrouter_api_key: str | None
     openrouter_model: str
+    firebase_project_id: str | None
+    firebase_credentials_path: Path
 
     @property
     def github_repo_full(self) -> str:
@@ -130,5 +132,9 @@ def load_settings(
         openrouter_model=(
             os.getenv("OPENROUTER_MODEL", str(agent_cfg.get("model", "openrouter/free"))).strip()
             or "openrouter/free"
+        ),
+        firebase_project_id=os.getenv("FIREBASE_PROJECT_ID", "").strip() or None,
+        firebase_credentials_path=Path(
+            os.getenv("FIREBASE_CREDENTIALS_PATH", "config/firebase-service-account.json")
         ),
     )
