@@ -6,6 +6,7 @@ import urllib.request
 
 from action_server import ActionServerError, run_action_server
 from agent_chat import AgentChatError, run_ask
+from agent_history import print_agent_history
 from agent_loop import AgentLoopError
 from agent_tools import AgentToolError, format_tools_for_cli, list_agent_tools, tool_schemas
 from app_logging import get_logger, setup_logging
@@ -188,6 +189,12 @@ def agent_tools_command(show_json: bool) -> None:
     print(f"\nTotal: {len(list_agent_tools())} tool(s)")
 
 
+def agent_history_command(session_id: str | None, limit: int) -> None:
+    settings = load_settings()
+    print_agent_history(settings, session_id=session_id, limit=limit)
+    print("\nLocal debug log: logs/app.log")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -291,6 +298,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print OpenRouter-compatible tool schemas as JSON",
     )
+
+    agent_history = subparsers.add_parser(
+        "agent-history",
+        help="View agent sessions, runs, and tool activity from Firestore (Step 11.7)",
+    )
+    agent_history.add_argument(
+        "--session",
+        default=None,
+        help="Show full history for one session id",
+    )
+    agent_history.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum entries per section (default: 20)",
+    )
     return parser
 
 
@@ -380,6 +403,10 @@ def main() -> None:
 
         if args.command == "agent-tools":
             agent_tools_command(show_json=args.json)
+            return
+
+        if args.command == "agent-history":
+            agent_history_command(session_id=args.session, limit=args.limit)
             return
 
         print_default_summary()

@@ -92,5 +92,6 @@ Mark each item when done. Complete steps in order.
 - [ ] Agent tools wrap existing workflows
 - [ ] Agent loop calls tools and logs to Firebase
 - [ ] Confirmation required before sending emails
+- [x] Step 11.7 code: `src/agent_history.py` + `agent-history` CLI
 - [ ] `agent-history` shows past runs from Firestore
 - [ ] `scripts/test_step11.py` passes

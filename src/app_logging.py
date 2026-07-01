@@ -57,6 +57,25 @@ def log_workflow_end(
         logger.info("workflow=%s event=end status=%s", workflow, status)
 
 
+def log_llm_call(
+    logger: logging.Logger,
+    *,
+    model: str,
+    latency_ms: float,
+    prompt_tokens: int,
+    completion_tokens: int,
+    tool_calls: int = 0,
+) -> None:
+    logger.info(
+        "llm_call model=%s latency_ms=%.0f prompt_tokens=%s completion_tokens=%s tool_calls=%s",
+        model,
+        latency_ms,
+        prompt_tokens,
+        completion_tokens,
+        tool_calls,
+    )
+
+
 def log_tool_call(
     logger: logging.Logger,
     server: str,

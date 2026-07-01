@@ -36,6 +36,7 @@ class AgentLoopResult:
     completion_tokens: int
     tools_called: list[str]
     iterations: int
+    latency_ms: float
 
 
 def _resolve_tool_name(tool_name: str, *, dry_run: bool) -> str | None:
@@ -97,6 +98,7 @@ def run_agent_loop(
 
     total_prompt_tokens = 0
     total_completion_tokens = 0
+    total_latency_ms = 0.0
     tools_called: list[str] = []
     resolved_model = settings.openrouter_model
     iterations = 0
@@ -106,6 +108,7 @@ def run_agent_loop(
         completion = chat_completion(settings, conversation, tools=tools)
         total_prompt_tokens += completion.prompt_tokens
         total_completion_tokens += completion.completion_tokens
+        total_latency_ms += completion.latency_ms
         resolved_model = completion.model
 
         if not completion.tool_calls:
@@ -118,6 +121,7 @@ def run_agent_loop(
                 completion_tokens=total_completion_tokens,
                 tools_called=tools_called,
                 iterations=iterations,
+                latency_ms=total_latency_ms,
             )
 
         conversation.append(completion.assistant_message)

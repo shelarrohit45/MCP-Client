@@ -150,6 +150,8 @@ def log_agent_run(
     tools_called: list[str],
     success: bool,
     error: str | None = None,
+    llm_calls: int = 0,
+    latency_ms: float = 0.0,
 ) -> str:
     """Record an LLM agent run in agent_runs."""
     db = init_firebase(settings)
@@ -161,12 +163,20 @@ def log_agent_run(
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "tools_called": tools_called,
+            "llm_calls": llm_calls,
+            "latency_ms": round(latency_ms, 1),
             "success": success,
             "error": error,
             "created_at": firestore.SERVER_TIMESTAMP,
         }
     )
-    logger.info("firebase_agent_run_logged run_id=%s success=%s", run_ref.id, success)
+    logger.info(
+        "firebase_agent_run_logged run_id=%s success=%s latency_ms=%.0f llm_calls=%s",
+        run_ref.id,
+        success,
+        latency_ms,
+        llm_calls,
+    )
     return run_ref.id
 
 
@@ -237,3 +247,90 @@ def run_firebase_connectivity_test(settings: Settings) -> dict[str, Any]:
         "message_count": len(messages),
         "verified_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _format_timestamp(value: Any) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
+    if hasattr(value, "timestamp"):
+        return datetime.fromtimestamp(value.timestamp(), tz=timezone.utc).isoformat()
+    return str(value)
+
+
+def _doc_to_dict(doc: Any) -> dict[str, Any]:
+    data = doc.to_dict() or {}
+    data["id"] = doc.id
+    if "created_at" in data:
+        data["created_at"] = _format_timestamp(data["created_at"])
+    if "updated_at" in data:
+        data["updated_at"] = _format_timestamp(data["updated_at"])
+    return data
+
+
+def list_recent_sessions(
+    settings: Settings,
+    *,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """List agent sessions ordered by most recently updated."""
+    db = init_firebase(settings)
+    query = (
+        db.collection(COLLECTION_SESSIONS)
+        .order_by("updated_at", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+    )
+    return [_doc_to_dict(doc) for doc in query.stream()]
+
+
+def list_recent_agent_runs(
+    settings: Settings,
+    *,
+    limit: int = 20,
+    session_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """List agent runs ordered by most recent, optionally filtered by session."""
+    db = init_firebase(settings)
+    query = db.collection(COLLECTION_AGENT_RUNS).order_by(
+        "created_at", direction=firestore.Query.DESCENDING
+    )
+    if session_id:
+        query = query.where("session_id", "==", session_id)
+    query = query.limit(limit)
+    return [_doc_to_dict(doc) for doc in query.stream()]
+
+
+def list_recent_workflow_history(
+    settings: Settings,
+    *,
+    limit: int = 20,
+    session_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """List workflow history entries, optionally filtered by session in metadata."""
+    db = init_firebase(settings)
+    fetch_limit = limit * 5 if session_id else limit
+    query = (
+        db.collection(COLLECTION_WORKFLOW_HISTORY)
+        .order_by("created_at", direction=firestore.Query.DESCENDING)
+        .limit(fetch_limit)
+    )
+    entries = [_doc_to_dict(doc) for doc in query.stream()]
+    if session_id:
+        entries = [
+            entry
+            for entry in entries
+            if (entry.get("metadata") or {}).get("session_id") == session_id
+        ]
+    return entries[:limit]
+
+
+def get_session(settings: Settings, session_id: str) -> dict[str, Any] | None:
+    """Return session document metadata or None if missing."""
+    db = init_firebase(settings)
+    snapshot = db.collection(COLLECTION_SESSIONS).document(session_id).get()
+    if not snapshot.exists:
+        return None
+    return _doc_to_dict(snapshot)

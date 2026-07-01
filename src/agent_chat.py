@@ -142,6 +142,8 @@ def run_ask(
             prompt_tokens=loop_result.prompt_tokens,
             completion_tokens=loop_result.completion_tokens,
             tools_called=loop_result.tools_called,
+            llm_calls=loop_result.iterations,
+            latency_ms=loop_result.latency_ms,
             success=True,
         )
 

@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 
-from app_logging import get_logger
+from app_logging import get_logger, log_llm_call
 from config import Settings
 
 logger = get_logger("llm")
@@ -30,6 +30,7 @@ class ChatResult:
     model: str
     prompt_tokens: int
     completion_tokens: int
+    latency_ms: float = 0.0
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     assistant_message: dict[str, Any] = field(default_factory=dict)
 
@@ -136,11 +137,13 @@ def chat_completion(
 
     with httpx.Client(timeout=timeout_seconds) as client:
         for attempt in range(max_retries):
+            started = time.perf_counter()
             response = client.post(
                 OPENROUTER_CHAT_URL,
                 headers=headers,
                 json=payload,
             )
+            latency_ms = (time.perf_counter() - started) * 1000
 
             if response.status_code == 429:
                 wait_seconds = 2**attempt
@@ -169,13 +172,23 @@ def chat_completion(
                 ) from error
 
             data = response.json()
-            result = _parse_response(data, chosen_model)
-            logger.info(
-                "openrouter_chat model=%s prompt_tokens=%s completion_tokens=%s tool_calls=%s",
-                result.model,
-                result.prompt_tokens,
-                result.completion_tokens,
-                len(result.tool_calls),
+            parsed = _parse_response(data, chosen_model)
+            result = ChatResult(
+                content=parsed.content,
+                model=parsed.model,
+                prompt_tokens=parsed.prompt_tokens,
+                completion_tokens=parsed.completion_tokens,
+                latency_ms=latency_ms,
+                tool_calls=parsed.tool_calls,
+                assistant_message=parsed.assistant_message,
+            )
+            log_llm_call(
+                logger,
+                model=result.model,
+                latency_ms=result.latency_ms,
+                prompt_tokens=result.prompt_tokens,
+                completion_tokens=result.completion_tokens,
+                tool_calls=len(result.tool_calls),
             )
             return result
 
