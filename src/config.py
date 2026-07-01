@@ -37,6 +37,8 @@ class Settings:
     action_port: int
     action_secret: str
     pr_check_interval_minutes: int
+    openrouter_api_key: str | None
+    openrouter_model: str
 
     @property
     def github_repo_full(self) -> str:
@@ -90,6 +92,7 @@ def load_settings(
     email_cfg = data.get("email", {})
     schedule_cfg = data.get("schedule", {})
     pr_cfg = data.get("pr_notify", {})
+    agent_cfg = data.get("agent", {})
 
     github_owner = str(github_cfg.get("owner", "")).strip() or _require_env("GITHUB_OWNER")
     github_repo = str(github_cfg.get("repo", "")).strip() or _require_env("GITHUB_REPO")
@@ -122,5 +125,10 @@ def load_settings(
         or _require_env("ACTION_SECRET"),
         pr_check_interval_minutes=int(
             os.getenv("PR_CHECK_INTERVAL_MINUTES", str(pr_cfg.get("check_interval_minutes", 5)))
+        ),
+        openrouter_api_key=os.getenv("OPENROUTER_API_KEY", "").strip() or None,
+        openrouter_model=(
+            os.getenv("OPENROUTER_MODEL", str(agent_cfg.get("model", "openrouter/free"))).strip()
+            or "openrouter/free"
         ),
     )

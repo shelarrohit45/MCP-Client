@@ -61,5 +61,5 @@ You now have a working **GitHub + Email MCP automation client**.
 ### Optional future enhancements
 - PR reminder workflow
 - Release announcement email
-- SQLite for history
-- Natural-language agent layer
+
+→ Continue to [Step 11 — OpenRouter Agent + Firebase](./step-11-agent-openrouter-firebase.md) for the natural-language agent layer and cloud history (Firebase Firestore).

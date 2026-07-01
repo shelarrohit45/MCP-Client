@@ -70,3 +70,16 @@ Mark each item when done. Complete steps in order.
 - [ ] Daily digest scheduled
 - [ ] CI alert check scheduled
 - [ ] `README.md` complete with setup guide
+
+## Step 11 — OpenRouter Agent + Firebase
+- [ ] OpenRouter API key configured (`OPENROUTER_API_KEY`)
+- [x] Step 11.1 code: `src/llm_client.py` + `llm-test` command
+- [ ] `python src/main.py llm-test` returns live OpenRouter response
+- [ ] Firebase project + Firestore enabled
+- [ ] `firebase-test` writes/reads from Firestore
+- [ ] `ask` command with natural language works
+- [ ] Agent tools wrap existing workflows
+- [ ] Agent loop calls tools and logs to Firebase
+- [ ] Confirmation required before sending emails
+- [ ] `agent-history` shows past runs from Firestore
+- [ ] `scripts/test_step11.py` passes

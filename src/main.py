@@ -10,6 +10,7 @@ from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
 from error_messages import format_error_for_user
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
+from llm_client import LLMClientError, chat as llm_chat
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
 from workflows.ci_alert import CiAlertError, run_ci_alert
 from workflows.daily_digest import DailyDigestError, run_daily_digest
@@ -120,6 +121,21 @@ def run_scheduler_command() -> None:
     run_scheduler(settings)
 
 
+def llm_test_command() -> None:
+    settings = load_settings()
+    prompt = (
+        "You are testing an MCP DevOps client. "
+        "Reply with exactly: MCP client LLM test OK"
+    )
+    print(f"Model: {settings.openrouter_model}")
+    print("Sending test prompt to OpenRouter...")
+    response = llm_chat(
+        settings,
+        [{"role": "user", "content": prompt}],
+    )
+    print(f"Response: {response}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -181,6 +197,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "run-scheduler",
         help="Run digest and CI alert jobs on schedule (see config/config.yaml)",
+    )
+
+    subparsers.add_parser(
+        "llm-test",
+        help="Test OpenRouter LLM connection (Step 11.1)",
     )
     return parser
 
@@ -252,6 +273,10 @@ def main() -> None:
             run_scheduler_command()
             return
 
+        if args.command == "llm-test":
+            llm_test_command()
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -279,6 +304,10 @@ def main() -> None:
         sys.exit(1)
     except SchedulerError as error:
         cli_logger.error("scheduler_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except LLMClientError as error:
+        cli_logger.error("llm_client_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI

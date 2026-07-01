@@ -18,7 +18,7 @@ A Python app that:
 ## How to Use This Plan
 
 1. Open [checklist.md](./checklist.md) to track progress
-2. Complete steps in order: `step-00` → `step-10`
+2. Complete steps in order: `step-00` → `step-11`
 3. Each step file has: **Goal**, **Tasks**, **Done when**, **Commands**
 4. Do not skip ahead until the current step passes its "Done when" criteria
 
@@ -39,8 +39,9 @@ A Python app that:
 | 8 | [step-08-daily-digest.md](./steps/step-08-daily-digest.md) | Daily repo summary email | 3–4 hrs |
 | 9 | [step-09-logging-dedup.md](./steps/step-09-logging-dedup.md) | Logs + duplicate protection | 2–3 hrs |
 | 10 | [step-10-scheduler-docs.md](./steps/step-10-scheduler-docs.md) | Automation + README | 2–3 hrs |
+| 11 | [step-11-agent-openrouter-firebase.md](./steps/step-11-agent-openrouter-firebase.md) | OpenRouter agent + Firebase memory | 2–3 wks |
 
-**Total estimate:** 3–4 weeks at a comfortable pace.
+**Total estimate:** 3–4 weeks for steps 0–10; step 11 is optional and incremental.
 
 ---
 
