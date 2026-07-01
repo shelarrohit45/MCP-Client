@@ -6,6 +6,7 @@ import urllib.request
 
 from action_server import ActionServerError, run_action_server
 from agent_chat import AgentChatError, run_ask
+from agent_loop import AgentLoopError
 from agent_tools import AgentToolError, format_tools_for_cli, list_agent_tools, tool_schemas
 from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
@@ -153,13 +154,17 @@ def firebase_test_command() -> None:
     print("\nCheck Firebase Console → Firestore for these documents.")
 
 
-def ask_command(question: str, session_id: str | None) -> None:
+def ask_command(question: str, session_id: str | None, dry_run: bool) -> None:
     settings = load_settings()
-    result = run_ask(settings, question, session_id=session_id)
+    result = run_ask(settings, question, session_id=session_id, dry_run=dry_run)
     print(f"Session: {result.session_id}")
     print(f"Model: {result.model}")
+    if dry_run:
+        print("Mode: dry-run (preview tools only)")
     if result.prior_message_count:
         print(f"Loaded {result.prior_message_count} prior message(s) from Firebase.")
+    if result.tools_called:
+        print(f"Tools used: {', '.join(result.tools_called)}")
     print(f"\n{result.response}")
     print(f"\nResume this chat: python src/main.py ask --session {result.session_id} \"...\"")
 
@@ -250,13 +255,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     ask = subparsers.add_parser(
         "ask",
-        help="Natural language chat with OpenRouter + Firebase memory (Step 11.3)",
+        help="Natural language agent chat with tools + Firebase memory (Step 11.3+)",
     )
     ask.add_argument("question", help="Your question in plain English")
     ask.add_argument(
         "--session",
         default=None,
         help="Resume an existing chat session id from a previous ask command",
+    )
+    ask.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview mode: use preview tools only, no emails sent",
     )
 
     agent_tools = subparsers.add_parser(
@@ -347,7 +357,7 @@ def main() -> None:
             return
 
         if args.command == "ask":
-            ask_command(question=args.question, session_id=args.session)
+            ask_command(question=args.question, session_id=args.session, dry_run=args.dry_run)
             return
 
         if args.command == "agent-tools":
@@ -397,6 +407,10 @@ def main() -> None:
         sys.exit(1)
     except AgentToolError as error:
         cli_logger.error("agent_tool_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentLoopError as error:
+        cli_logger.error("agent_loop_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI

@@ -17,3 +17,4 @@ pr_notify:
 
 agent:
   model: "openrouter/free"
+  max_tool_iterations: 5

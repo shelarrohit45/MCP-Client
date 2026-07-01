@@ -36,17 +36,17 @@ def main() -> int:
     )
     results.append(check("ask command registered", help_run.returncode == 0))
     results.append(check("ask --session flag documented", "--session" in help_run.stdout))
+    results.append(check("ask --dry-run flag documented", "--dry-run" in help_run.stdout))
 
     try:
         from agent_chat import (
             AgentChatError,
-            AskResult,
             _to_llm_messages,
             new_session_id,
             run_ask,
         )
+        from agent_loop import AgentLoopResult
         from config import load_settings
-        from llm_client import ChatResult
 
         session_id = new_session_id()
         results.append(check("new_session_id format", session_id.startswith("session-")))
@@ -65,12 +65,14 @@ def main() -> int:
             patch("agent_chat.get_session_messages", return_value=[]),
             patch("agent_chat.save_message", return_value="msg-1"),
             patch(
-                "agent_chat.chat_completion",
-                return_value=ChatResult(
-                    content="Repo looks healthy.",
+                "agent_chat.run_agent_loop",
+                return_value=AgentLoopResult(
+                    response="Repo looks healthy.",
                     model="openrouter/free",
                     prompt_tokens=12,
                     completion_tokens=6,
+                    tools_called=["fetch_github_summary"],
+                    iterations=2,
                 ),
             ),
             patch("agent_chat.log_agent_run", return_value="run-1"),
@@ -78,6 +80,7 @@ def main() -> int:
             result = run_ask(settings, "How is my repo?", session_id=session_id)
             results.append(check("run_ask returns response", result.response == "Repo looks healthy."))
             results.append(check("run_ask keeps session id", result.session_id == session_id))
+            results.append(check("run_ask reports tools_called", "fetch_github_summary" in result.tools_called))
 
         try:
             run_ask(settings, "   ")

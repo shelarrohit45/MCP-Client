@@ -41,6 +41,7 @@ class Settings:
     openrouter_model: str
     firebase_project_id: str | None
     firebase_credentials_path: Path
+    agent_max_tool_iterations: int
 
     @property
     def github_repo_full(self) -> str:
@@ -136,5 +137,8 @@ def load_settings(
         firebase_project_id=os.getenv("FIREBASE_PROJECT_ID", "").strip() or None,
         firebase_credentials_path=Path(
             os.getenv("FIREBASE_CREDENTIALS_PATH", "config/firebase-service-account.json")
+        ),
+        agent_max_tool_iterations=int(
+            os.getenv("AGENT_MAX_TOOL_ITERATIONS", str(agent_cfg.get("max_tool_iterations", 5)))
         ),
     )

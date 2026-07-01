@@ -43,15 +43,20 @@ def main() -> int:
 
     try:
         from config import load_settings
-        from llm_client import LLMClientError, _extract_content, chat
+        from llm_client import LLMClientError, _parse_response, chat
 
         settings = load_settings()
         results.append(check("settings.openrouter_model loaded", bool(settings.openrouter_model)))
 
-        content = _extract_content(
-            {"choices": [{"message": {"content": "hello"}}]}
+        result = _parse_response(
+            {
+                "model": "openrouter/free",
+                "choices": [{"message": {"content": "hello"}}],
+                "usage": {},
+            },
+            "openrouter/free",
         )
-        results.append(check("_extract_content parses string", content == "hello"))
+        results.append(check("_parse_response parses string", result.content == "hello"))
 
         with patch("llm_client.httpx.Client") as mock_client_cls:
             mock_response = MagicMock()

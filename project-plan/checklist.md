@@ -82,6 +82,8 @@ Mark each item when done. Complete steps in order.
 - [ ] Multi-turn `ask --session` works with Firebase history
 - [x] Step 11.4 code: `src/agent_tools.py` + `agent-tools` command
 - [ ] `python src/main.py agent-tools` lists all 7 tools
+- [x] Step 11.5 code: `src/agent_loop.py` + tool-calling `ask`
+- [ ] `ask` command calls tools and logs runs in Firestore
 - [ ] Firebase project + Firestore enabled
 - [ ] `firebase-test` writes/reads from Firestore
 - [ ] `ask` command with natural language works

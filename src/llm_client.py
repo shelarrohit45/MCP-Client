@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
@@ -16,7 +17,7 @@ logger = get_logger("llm")
 OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "openrouter/free"
 DEFAULT_MAX_RETRIES = 3
-DEFAULT_TIMEOUT_SECONDS = 60.0
+DEFAULT_TIMEOUT_SECONDS = 120.0
 
 
 class LLMClientError(Exception):
@@ -29,6 +30,8 @@ class ChatResult:
     model: str
     prompt_tokens: int
     completion_tokens: int
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    assistant_message: dict[str, Any] = field(default_factory=dict)
 
 
 def _api_key(settings: Settings) -> str:
@@ -48,35 +51,47 @@ def _model(settings: Settings, model: str | None) -> str:
     return chosen
 
 
-def _extract_content(data: dict[str, Any]) -> str:
-    choices = data.get("choices") or []
-    if not choices:
-        raise LLMClientError("OpenRouter returned no choices.")
-
-    message = choices[0].get("message") or {}
-    content = message.get("content")
+def _text_from_content(content: Any) -> str:
     if content is None:
-        raise LLMClientError("OpenRouter returned an empty message.")
-
+        return ""
     if isinstance(content, str):
-        text = content.strip()
-    elif isinstance(content, list):
+        return content.strip()
+    if isinstance(content, list):
         parts: list[str] = []
         for block in content:
             if isinstance(block, dict) and block.get("type") == "text":
                 parts.append(str(block.get("text", "")))
-        text = "".join(parts).strip()
-    else:
-        text = str(content).strip()
+        return "".join(parts).strip()
+    return str(content).strip()
 
-    if not text:
+
+def _parse_response(data: dict[str, Any], chosen_model: str) -> ChatResult:
+    choices = data.get("choices") or []
+    if not choices:
+        raise LLMClientError("OpenRouter returned no choices.")
+
+    message = dict(choices[0].get("message") or {})
+    tool_calls = list(message.get("tool_calls") or [])
+    content = _text_from_content(message.get("content"))
+
+    if not content and not tool_calls:
         raise LLMClientError("OpenRouter returned an empty response.")
-    return text
+
+    usage = data.get("usage") or {}
+    resolved_model = str(data.get("model", chosen_model))
+    return ChatResult(
+        content=content,
+        model=resolved_model,
+        prompt_tokens=int(usage.get("prompt_tokens", 0) or 0),
+        completion_tokens=int(usage.get("completion_tokens", 0) or 0),
+        tool_calls=tool_calls,
+        assistant_message=message,
+    )
 
 
 def chat(
     settings: Settings,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     model: str | None = None,
     max_retries: int = DEFAULT_MAX_RETRIES,
@@ -94,13 +109,14 @@ def chat(
 
 def chat_completion(
     settings: Settings,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
+    tools: list[dict[str, Any]] | None = None,
     model: str | None = None,
     max_retries: int = DEFAULT_MAX_RETRIES,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> ChatResult:
-    """Send a chat completion request and return text plus token usage."""
+    """Send a chat completion request and return assistant text and/or tool calls."""
     api_key = _api_key(settings)
     chosen_model = _model(settings, model)
     headers = {
@@ -109,10 +125,12 @@ def chat_completion(
         "HTTP-Referer": "https://github.com/mcp-client",
         "X-OpenRouter-Title": "MCP DevOps Client",
     }
-    payload = {
+    payload: dict[str, Any] = {
         "model": chosen_model,
         "messages": messages,
     }
+    if tools:
+        payload["tools"] = tools
 
     last_error = "OpenRouter rate limit exceeded after retries."
 
@@ -151,22 +169,29 @@ def chat_completion(
                 ) from error
 
             data = response.json()
-            content = _extract_content(data)
-            usage = data.get("usage") or {}
-            resolved_model = str(data.get("model", chosen_model))
-            prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
-            completion_tokens = int(usage.get("completion_tokens", 0) or 0)
+            result = _parse_response(data, chosen_model)
             logger.info(
-                "openrouter_chat model=%s prompt_tokens=%s completion_tokens=%s",
-                resolved_model,
-                prompt_tokens,
-                completion_tokens,
+                "openrouter_chat model=%s prompt_tokens=%s completion_tokens=%s tool_calls=%s",
+                result.model,
+                result.prompt_tokens,
+                result.completion_tokens,
+                len(result.tool_calls),
             )
-            return ChatResult(
-                content=content,
-                model=resolved_model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-            )
+            return result
 
     raise LLMClientError(last_error)
+
+
+def parse_tool_arguments(raw_arguments: Any) -> dict[str, Any]:
+    """Parse JSON tool arguments from an OpenRouter tool call."""
+    if raw_arguments in (None, ""):
+        return {}
+    if isinstance(raw_arguments, dict):
+        return raw_arguments
+    if isinstance(raw_arguments, str):
+        try:
+            parsed = json.loads(raw_arguments)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
