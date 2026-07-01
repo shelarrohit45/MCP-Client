@@ -1,71 +1,75 @@
 # MCP Client — Project Plan
 
-Step-by-step plan to build a **GitHub + Email MCP** automation client.
+Step-by-step plan to build a **GitHub + Email MCP** automation client with an optional **OpenRouter agent** and **Firebase** memory.
 
-**No AWS required.** Build one step at a time — finish and test each step before moving on.
+**Status: complete** (Steps 0–11 implemented). See [README.md](../README.md) for usage and [docs/](../docs/) for architecture, Firebase, and testing.
 
 ---
 
-## Project Goal
+## Project goal
 
 A Python app that:
+
 - Connects to **GitHub MCP** (repo, PRs, CI runs)
 - Connects to **Email MCP** (send reports and alerts)
 - Sends CI failure alerts and daily repo digests
+- Optionally provides a natural-language **agent** with Firestore memory
+
+**No AWS required.** Runs locally on your machine.
 
 ---
 
-## How to Use This Plan
+## How to use this plan
 
-1. Open [checklist.md](./checklist.md) to track progress
-2. Complete steps in order: `step-00` → `step-10`
+1. Open [checklist.md](./checklist.md) for progress tracking
+2. Steps were completed in order: `step-00` → `step-11`
 3. Each step file has: **Goal**, **Tasks**, **Done when**, **Commands**
-4. Do not skip ahead until the current step passes its "Done when" criteria
 
 ---
 
-## Steps Overview
+## Steps overview
 
-| Step | File | Focus | Est. Time |
-|------|------|--------|-----------|
-| 0 | [step-00-prerequisites.md](./steps/step-00-prerequisites.md) | Accounts, tokens, tools | 1–2 hrs |
-| 1 | [step-01-basic-project.md](./steps/step-01-basic-project.md) | Folder structure, venv, hello run | 1 hr |
-| 2 | [step-02-config-system.md](./steps/step-02-config-system.md) | YAML + `.env` config | 1–2 hrs |
-| 3 | [step-03-github-mcp-connect.md](./steps/step-03-github-mcp-connect.md) | Connect GitHub MCP, list tools | 2–3 hrs |
-| 4 | [step-04-github-data-fetch.md](./steps/step-04-github-data-fetch.md) | Fetch PRs and CI runs | 2–3 hrs |
-| 5 | [step-05-email-mcp-connect.md](./steps/step-05-email-mcp-connect.md) | Connect Email MCP, test send | 2–3 hrs |
-| 6 | [step-06-ci-alert-workflow.md](./steps/step-06-ci-alert-workflow.md) | First end-to-end workflow | 3–4 hrs |
-| 7 | [step-07-html-templates.md](./steps/step-07-html-templates.md) | Jinja2 email templates | 2 hrs |
-| 8 | [step-08-daily-digest.md](./steps/step-08-daily-digest.md) | Daily repo summary email | 3–4 hrs |
-| 9 | [step-09-logging-dedup.md](./steps/step-09-logging-dedup.md) | Logs + duplicate protection | 2–3 hrs |
-| 10 | [step-10-scheduler-docs.md](./steps/step-10-scheduler-docs.md) | Automation + README | 2–3 hrs |
-
-**Total estimate:** 3–4 weeks at a comfortable pace.
+| Step | File | Focus | Status |
+|------|------|--------|--------|
+| 0 | [step-00-prerequisites.md](./steps/step-00-prerequisites.md) | Accounts, tokens, tools | Done |
+| 1 | [step-01-basic-project.md](./steps/step-01-basic-project.md) | Folder structure, venv | Done |
+| 2 | [step-02-config-system.md](./steps/step-02-config-system.md) | YAML + `.env` | Done |
+| 3 | [step-03-github-mcp-connect.md](./steps/step-03-github-mcp-connect.md) | GitHub MCP | Done |
+| 4 | [step-04-github-data-fetch.md](./steps/step-04-github-data-fetch.md) | Fetch PRs and CI | Done |
+| 5 | [step-05-email-mcp-connect.md](./steps/step-05-email-mcp-connect.md) | Email MCP | Done |
+| 6 | [step-06-ci-alert-workflow.md](./steps/step-06-ci-alert-workflow.md) | CI alert workflow | Done |
+| 7 | [step-07-html-templates.md](./steps/step-07-html-templates.md) | Jinja2 templates | Done |
+| 8 | [step-08-daily-digest.md](./steps/step-08-daily-digest.md) | Daily digest | Done |
+| 9 | [step-09-logging-dedup.md](./steps/step-09-logging-dedup.md) | Logs + dedup | Done |
+| 10 | [step-10-scheduler-docs.md](./steps/step-10-scheduler-docs.md) | Scheduler + README | Done |
+| 11 | [step-11-agent-openrouter-firebase.md](./steps/step-11-agent-openrouter-firebase.md) | Agent + Firebase | Done |
 
 ---
 
-## Target Folder Structure (End State)
+## Documentation map
 
-```
-mcp-client/
-├── project-plan/          ← you are here
-├── src/
-│   ├── main.py
-│   ├── config.py
-│   ├── mcp_manager.py
-│   └── workflows/
-├── config/
-│   └── config.yaml
-├── templates/
-├── logs/
-├── tests/
-├── requirements.txt
-├── .env
-└── README.md
+| Document | Contents |
+|----------|----------|
+| [README.md](../README.md) | Overview, quick start, CLI, config |
+| [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) | System design, patterns, data flows |
+| [docs/FIREBASE.md](../docs/FIREBASE.md) | Firestore schema, setup, testing |
+| [docs/TESTING.md](../docs/TESTING.md) | Local, CI, and smoke tests |
+| [checklist.md](./checklist.md) | Build progress checklist |
+
+---
+
+## Verify the build
+
+```bash
+source venv/bin/activate
+./scripts/run_all_tests.sh --unit
+python scripts/test_step11.py
 ```
 
----
+Live smoke test: see [docs/TESTING.md](../docs/TESTING.md).
 
-## Current Step
+Run automation:
 
-**Start here:** [Step 0 — Prerequisites](./steps/step-00-prerequisites.md)
+```bash
+python src/main.py run-scheduler
+```

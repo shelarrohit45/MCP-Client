@@ -1,34 +1,76 @@
 # MCP DevOps Client
 
-A Python automation client that connects to **GitHub MCP** and **Email MCP** to monitor your repository and send email alerts and digests.
+A **local Python automation client** that monitors a GitHub repository and sends email alerts and digests — with an optional **natural language agent** powered by OpenRouter and Firebase.
+
+**Repository:** [shelarrohit45/MCP-Client](https://github.com/shelarrohit45/MCP-Client)
+
+---
+
+## Project goal
+
+Build a DevOps assistant that:
+
+1. Connects to **GitHub** and **Email** through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io)
+2. Automates **CI failure alerts**, **daily digests**, and **PR notifications**
+3. Runs **locally** without AWS or custom cloud hosting
+4. Adds an optional **LLM agent** (`ask`) that reuses the same workflows — with chat memory in Firestore
+
+No AWS required. The scheduler works without the agent layer.
+
+---
+
+## What we built (Steps 0–11)
+
+| Step | Feature | Key files |
+|------|---------|-----------|
+| **0** | Prerequisites check | `scripts/check_prerequisites.py` |
+| **1** | Project structure, venv, CLI | `src/main.py`, `requirements.txt` |
+| **2** | YAML + `.env` configuration | `src/config.py`, `config/config.yaml` |
+| **3** | GitHub MCP connection | `src/mcp_manager.py`, `bin/github-mcp-server` |
+| **4** | Fetch PRs, CI status, issues | `src/github_fetch.py` |
+| **5** | Email MCP connection | `src/email_client.py`, `@codefuturist/email-mcp` |
+| **6** | CI failure alert workflow | `src/workflows/ci_alert.py` |
+| **7** | Jinja2 HTML email templates | `templates/`, `src/template_renderer.py` |
+| **8** | Daily digest email | `src/workflows/daily_digest.py` |
+| **9** | Logging + duplicate protection | `src/app_logging.py`, `logs/state.json` |
+| **10** | APScheduler automation | `src/scheduler.py`, `run-scheduler` |
+| **11** | OpenRouter agent + Firebase memory | `src/agent_*.py`, `src/llm_client.py`, `src/firebase_store.py` |
+
+**Detailed docs:**
+
+- [Architecture & design patterns](docs/ARCHITECTURE.md)
+- [Firebase setup, schema & testing](docs/FIREBASE.md)
+- [Full testing guide](docs/TESTING.md)
+- [Build plan & checklist](project-plan/README.md)
+
+---
+
+## Tech stack — what we used and why
+
+| Technology | Role | Why |
+|------------|------|-----|
+| **Python 3.12** | Main application | MCP SDK, workflows, CLI |
+| **GitHub MCP Server** | GitHub integration | Official MCP tool surface; no custom API glue |
+| **Email MCP** (`@codefuturist/email-mcp`) | Send email via MCP | Standardized email tools; Node/npm dependency only |
+| **httpx** | OpenRouter HTTP client | Async-capable, simple REST for LLM API |
+| **OpenRouter** | LLM provider | Multi-model API; free tier for development |
+| **Firebase Firestore** | Agent memory & audit | Durable sessions, runs, workflow history |
+| **firebase-admin** | Server-side Firestore | Service account auth (industry standard for backends) |
+| **APScheduler** | Cron-like scheduling | Daily digest + periodic CI checks in-process |
+| **Jinja2** | HTML emails | Separation of template and data |
+| **PyYAML + python-dotenv** | Configuration | Non-secrets in YAML; secrets in `.env` (12-factor) |
+| **GitHub Actions** | CI | Unit tests on every branch push |
+
+---
 
 ## What it does
 
 - Fetches open PRs, CI status, issues, and releases from GitHub
 - Sends **CI failure alerts** when checks fail (with duplicate protection)
 - Sends a **daily digest** email summarizing repo activity
-- Notifies on **PR events** (created, merged, approved, CI passed/failed, and more)
-- Supports **Merge/Reject links** in PR notification emails via a local action server
-
-No AWS or cloud hosting required — runs locally on your machine.
-
----
-
-## Prerequisites
-
-| Requirement | Notes |
-|-------------|--------|
-| **Python 3.12+** | `python3 --version` |
-| **Node.js 18+** | For Email MCP (`npx` / `node`) |
-| **GitHub PAT** | [Create token](https://github.com/settings/tokens) with `repo` scope (write for Merge/Reject) |
-| **Gmail app password** | For the sender account ([Google App Passwords](https://myaccount.google.com/apppasswords)) |
-
-### Install MCP servers
-
-```bash
-./scripts/install_github_mcp.sh
-./scripts/install_email_mcp.sh
-```
+- Notifies on **PR events** (created, merged, approved, CI passed/failed)
+- **Merge/Reject links** in PR emails via a local action server
+- **Natural language agent** (`ask`) with tool calling, confirmations, and Firebase memory
 
 ---
 
@@ -38,25 +80,109 @@ No AWS or cloud hosting required — runs locally on your machine.
 # 1. Clone and enter project
 cd mcp-client
 
-# 2. Create virtual environment
+# 2. Virtual environment
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Configure
-cp config/config.example.yaml config/config.yaml
+# 3. Install MCP servers
+./scripts/install_github_mcp.sh
+./scripts/install_email_mcp.sh
+
+# 4. Configure
+cp config/config.example.yaml config/config.yaml   # if needed
 cp .env.example .env
-# Edit config/config.yaml (repo, email addresses)
-# Edit .env (GITHUB_PERSONAL_ACCESS_TOKEN, EMAIL_PASSWORD, ACTION_SECRET)
+# Edit config/config.yaml (repo, emails, schedule)
+# Edit .env (GITHUB_PERSONAL_ACCESS_TOKEN, EMAIL_PASSWORD, etc.)
 
-# 4. Set up Email MCP config
-python scripts/setup_email_mcp_config.py   # if available, or run install_email_mcp.sh
-
-# 5. Verify connections
+# 5. Verify
+python scripts/check_prerequisites.py
 python src/main.py list-github-tools
 python src/main.py list-email-tools
 python src/main.py send-test-email
 ```
+
+---
+
+## Run automation (keep terminal open)
+
+```bash
+source venv/bin/activate
+python src/main.py run-scheduler
+```
+
+- **Daily digest** at `schedule.digest_time` (default `09:00` local)
+- **CI alert check** every `schedule.ci_check_interval_minutes` (default 30)
+
+Press `Ctrl+C` to stop. Logs: `logs/app.log`
+
+```bash
+# Optional: watch logs in another terminal
+tail -f logs/app.log
+```
+
+---
+
+## Testing
+
+### Fast automated tests (recommended first)
+
+```bash
+source venv/bin/activate
+chmod +x scripts/run_all_tests.sh
+./scripts/run_all_tests.sh --unit
+```
+
+### Full local tests (needs `.env` + MCP servers)
+
+```bash
+./scripts/run_all_tests.sh
+```
+
+### Live smoke test
+
+```bash
+python scripts/check_prerequisites.py
+python src/main.py list-github-tools
+python src/main.py send-test-email
+python src/main.py ci-alert --dry-run
+python src/main.py digest --dry-run
+python src/main.py llm-test
+python src/main.py firebase-test
+python src/main.py ask --dry-run "How many open PRs?"
+python src/main.py agent-history
+```
+
+### Firebase testing
+
+```bash
+python src/main.py firebase-test
+python src/main.py ask --dry-run "How many open PRs?"
+python src/main.py agent-history
+```
+
+Then open **Firebase Console → Firestore → Data** to see `agent_sessions`, `agent_runs`, `workflow_history`.
+
+Full details: [docs/TESTING.md](docs/TESTING.md) and [docs/FIREBASE.md](docs/FIREBASE.md).
+
+### CI (every branch, not only main)
+
+GitHub Actions runs on every `push` and `pull_request`. Add secrets `GITHUB_PERSONAL_ACCESS_TOKEN` and `EMAIL_PASSWORD` for integration tests.
+
+See [docs/TESTING.md#ci-github-actions](docs/TESTING.md#ci-github-actions).
+
+---
+
+## Prerequisites
+
+| Requirement | Notes |
+|-------------|--------|
+| **Python 3.12+** | `python3 --version` |
+| **Node.js 18+** | For Email MCP |
+| **GitHub PAT** | [Create token](https://github.com/settings/tokens) — `repo` scope |
+| **Gmail app password** | [Google App Passwords](https://myaccount.google.com/apppasswords) |
+| **OpenRouter API key** | Optional — [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Firebase project** | Optional — [Firebase Console](https://console.firebase.google.com) |
 
 ---
 
@@ -68,94 +194,110 @@ python src/main.py send-test-email
 |---------|-----|-------------|
 | `github` | `owner`, `repo` | Target repository |
 | `email` | `sender`, `receiver` | From/to addresses |
-| `schedule` | `digest_time` | Daily digest time (`09:00` = 9 AM local) |
-| `schedule` | `ci_check_interval_minutes` | How often to check CI failures |
-| `pr_notify` | `check_interval_minutes` | PR watch polling interval |
+| `schedule` | `digest_time` | Daily digest (`09:00` = 9 AM local) |
+| `schedule` | `ci_check_interval_minutes` | CI check interval |
+| `pr_notify` | `check_interval_minutes` | PR watch interval |
+| `agent` | `model` | OpenRouter model (overridden by `.env`) |
+| `agent` | `max_tool_iterations` | Max tool rounds per `ask` |
+| `agent` | `require_confirmation` | Prompt before sensitive agent actions |
 
 ### `.env` (secrets — never commit)
 
 | Variable | Description |
 |----------|-------------|
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub PAT |
-| `EMAIL_PASSWORD` | Gmail app password for sender |
-| `ACTION_SECRET` | Random secret for PR action links (`openssl rand -hex 32`) |
-| `ACTION_BASE_URL` | Base URL for Merge/Reject links (use ngrok for phone) |
-| `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` | SMTP settings (Gmail defaults) |
-| `EMAIL_IMAP_HOST` / `EMAIL_IMAP_PORT` | IMAP settings (Gmail defaults) |
+| `EMAIL_PASSWORD` | Gmail app password |
+| `ACTION_SECRET` | PR action link secret (`openssl rand -hex 32`) |
+| `ACTION_BASE_URL` | Base URL for Merge/Reject links |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `OPENROUTER_MODEL` | Default `openrouter/free` |
+| `FIREBASE_PROJECT_ID` | Firebase project id |
+| `FIREBASE_CREDENTIALS_PATH` | Service account JSON path |
 
-### Email MCP config
+### OpenRouter
 
-Email credentials are written to `config/email-mcp/config.toml` (gitignored) by the setup script.
+1. Key at [openrouter.ai/keys](https://openrouter.ai/keys)
+2. Add to `.env`, verify: `python src/main.py llm-test`
+3. Free tier: ~**50 requests/day** without credits; HTTP 429 retried with backoff
+
+### Firebase
+
+1. Create project + enable **Firestore**
+2. Download service account JSON → `config/firebase-service-account.json`
+3. Set `FIREBASE_PROJECT_ID` in `.env`
+4. Verify: `python src/main.py firebase-test`
+
+Full schema and console guide: [docs/FIREBASE.md](docs/FIREBASE.md)
 
 ---
 
 ## CLI commands
 
-### GitHub
+### GitHub & email
 
 ```bash
-python src/main.py list-github-tools    # List GitHub MCP tools
-python src/main.py fetch-github         # Fetch open PRs + failed CI sample
+python src/main.py list-github-tools
+python src/main.py fetch-github
+python src/main.py list-email-tools
+python src/main.py send-test-email
 ```
 
-### Email
+### Workflows
 
 ```bash
-python src/main.py list-email-tools     # List Email MCP tools
-python src/main.py send-test-email      # Send a test email
+python src/main.py ci-alert              # Send CI failure alerts
+python src/main.py ci-alert --dry-run
+python src/main.py digest --dry-run      # Preview digest
+python src/main.py digest --send         # Send digest
+python src/main.py pr-notify
+python src/main.py pr-events
+python src/main.py pr-watch
 ```
 
-### CI alerts
+### PR actions & scheduler
 
 ```bash
-python src/main.py ci-alert             # Send alert for new CI failures (last 24h)
-python src/main.py ci-alert --dry-run   # Preview without sending
+python src/main.py action-server
+python src/main.py run-scheduler         # Keep terminal open
 ```
 
-Duplicate alerts are skipped automatically via `logs/state.json`.
-
-### Daily digest
+### Agent (OpenRouter + Firebase)
 
 ```bash
-python src/main.py digest --dry-run     # Preview digest HTML
-python src/main.py digest --send        # Send digest email
+python src/main.py llm-test
+python src/main.py firebase-test
+python src/main.py ask "How many open PRs?"
+python src/main.py ask --session <id> "Follow up..."
+python src/main.py ask --dry-run "Preview the digest"
+python src/main.py ask --yes "Send digest now"
+python src/main.py agent-tools
+python src/main.py agent-history
+python src/main.py agent-history --session <id>
 ```
 
-### PR notifications
+Sensitive tools prompt `Proceed? [y/N]` unless `--yes` or `agent.require_confirmation: false`.
 
-```bash
-python src/main.py pr-notify            # Notify for new open PRs
-python src/main.py pr-notify --dry-run
-python src/main.py pr-events            # Check all PR events once
-python src/main.py pr-watch             # Poll PR events continuously (every 5 min)
-python src/main.py pr-watch --interval 10
+---
+
+## Architecture
+
+```
+User / Scheduler
+       │
+       ▼
+   main.py (CLI)
+       │
+       ├── workflows/ ──► GitHub MCP ──► GitHub API
+       │              └── Email MCP ──► Gmail
+       │
+       └── ask ──► agent_loop ──► OpenRouter
+                      │              │
+                      ├── agent_tools (wraps workflows)
+                      ├── agent_guardrails (confirm sends)
+                      └── firebase_store ──► Firestore
 ```
 
-### PR action server (Merge/Reject from email)
-
-```bash
-python src/main.py action-server        # Start HTTP server for email links
-python src/main.py check-action-server  # Verify server is reachable
-```
-
-### Scheduler (automation)
-
-```bash
-python src/main.py run-scheduler
-```
-
-Runs in the foreground:
-- **Daily digest** at `schedule.digest_time` (default 09:00)
-- **CI alert check** every `schedule.ci_check_interval_minutes` (default 30)
-
-Press `Ctrl+C` to stop. Logs go to `logs/app.log`.
-
-#### Alternative: system cron
-
-```cron
-0 9 * * * cd /path/to/mcp-client && venv/bin/python src/main.py digest --send
-*/30 * * * * cd /path/to/mcp-client && venv/bin/python src/main.py ci-alert
-```
+Full diagram and patterns: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
@@ -163,20 +305,27 @@ Press `Ctrl+C` to stop. Logs go to `logs/app.log`.
 
 ```
 mcp-client/
+├── docs/
+│   ├── ARCHITECTURE.md      # Design, data flows, patterns
+│   ├── FIREBASE.md          # Firestore schema & testing
+│   └── TESTING.md           # How and where to test
 ├── src/
 │   ├── main.py              # CLI entry point
 │   ├── config.py            # Settings loader
-│   ├── mcp_manager.py       # GitHub + Email MCP connections
-│   ├── scheduler.py         # APScheduler automation
-│   ├── workflows/           # ci_alert, daily_digest, pr_events, pr_notify
-│   └── ...
+│   ├── mcp_manager.py       # GitHub + Email MCP
+│   ├── scheduler.py         # APScheduler
+│   ├── workflows/           # ci_alert, daily_digest, pr_*
+│   ├── llm_client.py        # OpenRouter
+│   ├── firebase_store.py    # Firestore
+│   └── agent_*.py           # Agent layer
 ├── config/
-│   ├── config.yaml          # Non-secret settings
-│   └── email-mcp/           # Email MCP config (gitignored)
-├── templates/               # Jinja2 HTML email templates
+│   ├── config.yaml
+│   └── firebase-service-account.json  # gitignored
+├── templates/               # Jinja2 email HTML
 ├── logs/                    # app.log, state.json (gitignored)
-├── scripts/                 # Install + test scripts
-└── requirements.txt
+├── scripts/                 # install, test, run_all_tests.sh
+├── .github/workflows/ci.yml # CI on all branches
+└── project-plan/            # Step-by-step build plan
 ```
 
 ---
@@ -185,27 +334,19 @@ mcp-client/
 
 | Problem | Fix |
 |---------|-----|
-| **GitHub MCP not found** | Run `./scripts/install_github_mcp.sh` or set `GITHUB_MCP_SERVER_PATH` |
-| **Private repo 403/empty data** | PAT needs `repo` scope with read access |
-| **Email MCP connection failed** | Check `EMAIL_PASSWORD` (Gmail app password), run `list-email-tools` |
-| **Merge/Reject 403** | PAT needs **Pull requests** + **Contents** write |
-| **Email links don't work on phone** | Start `action-server` and set `ACTION_BASE_URL` to an ngrok HTTPS URL |
-| **Duplicate CI alerts** | Working as designed — cleared via `logs/state.json` |
-| **No releases in digest** | Normal if the repo has no GitHub releases |
-| **Scheduler not running** | Keep terminal open or use cron; check `logs/app.log` |
-
-### View logs
+| GitHub MCP not found | `./scripts/install_github_mcp.sh` |
+| Private repo 403 | PAT needs `repo` scope |
+| Email MCP failed | Check `EMAIL_PASSWORD`; run `list-email-tools` |
+| Duplicate CI alerts | By design — see `logs/state.json` |
+| Scheduler not running | Keep terminal open or use cron |
+| `llm-test` 401 | Check `OPENROUTER_API_KEY` |
+| `llm-test` 429 | Free tier limit; wait or add credits |
+| `firebase-test` fails | Create Firestore DB; check project id + JSON path |
+| `ask` fails | Run `firebase-test` first |
+| Agent sent without prompt | You used `--yes` or disabled confirmation |
 
 ```bash
 tail -f logs/app.log
-```
-
-### Run step verification tests
-
-```bash
-python scripts/test_step01.py
-# ... through ...
-python scripts/test_step10.py
 ```
 
 ---

@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from email_client import EmailSendError
+from agent_chat import AgentChatError
+from agent_loop import AgentLoopError
+from agent_tools import AgentToolError
+from firebase_store import FirebaseStoreError
 from github_fetch import GitHubFetchError
+from llm_client import LLMClientError
 from mcp_manager import MCPConnectionError
 
 
@@ -40,6 +45,46 @@ def format_error_for_user(error: Exception) -> str:
                 f"read access. Details: {message}"
             )
         return f"GitHub data fetch failed: {message}"
+
+    if isinstance(error, LLMClientError):
+        if "missing openrouter_api_key" in lower or "authentication failed" in lower:
+            return (
+                "OpenRouter API key missing or invalid. Add OPENROUTER_API_KEY to .env "
+                "(create one at https://openrouter.ai/keys)."
+            )
+        if "rate limit" in lower or "429" in message:
+            return (
+                "OpenRouter rate limit reached. Wait a minute and retry, or use a paid model. "
+                f"Details: {message}"
+            )
+        return f"OpenRouter LLM error: {message}"
+
+    if isinstance(error, FirebaseStoreError):
+        if "credentials file not found" in lower:
+            return (
+                "Firebase service account JSON not found. Download it from Firebase Console "
+                "and save as config/firebase-service-account.json."
+            )
+        if "missing firebase_project_id" in lower:
+            return (
+                "Firebase project ID missing. Add FIREBASE_PROJECT_ID to .env "
+                "(Firebase Console → Project settings)."
+            )
+        return f"Firebase error: {message}"
+
+    if isinstance(error, AgentChatError):
+        return f"Agent chat error: {message}"
+
+    if isinstance(error, AgentToolError):
+        return f"Agent tool error: {message}"
+
+    if isinstance(error, AgentLoopError):
+        if "exceeded the maximum" in lower:
+            return (
+                "Agent used too many tool steps without finishing. "
+                "Try a simpler question or increase agent.max_tool_iterations in config."
+            )
+        return f"Agent loop error: {message}"
 
     if "401" in message or "bad credentials" in lower:
         return "Authentication failed. Check GITHUB_TOKEN or email credentials in .env."

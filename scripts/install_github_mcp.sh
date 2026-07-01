@@ -5,13 +5,33 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="$ROOT/bin"
 VERSION="v1.5.0"
+OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-case "$ARCH" in
-  arm64) ASSET="github-mcp-server_Darwin_arm64.tar.gz" ;;
-  x86_64) ASSET="github-mcp-server_Darwin_x86_64.tar.gz" ;;
+case "$OS" in
+  Darwin)
+    case "$ARCH" in
+      arm64) ASSET="github-mcp-server_Darwin_arm64.tar.gz" ;;
+      x86_64) ASSET="github-mcp-server_Darwin_x86_64.tar.gz" ;;
+      *)
+        echo "Unsupported macOS architecture: $ARCH"
+        exit 1
+        ;;
+    esac
+    ;;
+  Linux)
+    case "$ARCH" in
+      aarch64|arm64) ASSET="github-mcp-server_Linux_arm64.tar.gz" ;;
+      x86_64|amd64) ASSET="github-mcp-server_Linux_x86_64.tar.gz" ;;
+      i386|i686) ASSET="github-mcp-server_Linux_i386.tar.gz" ;;
+      *)
+        echo "Unsupported Linux architecture: $ARCH"
+        exit 1
+        ;;
+    esac
+    ;;
   *)
-    echo "Unsupported architecture: $ARCH"
+    echo "Unsupported OS: $OS (use macOS or Linux)"
     exit 1
     ;;
 esac

@@ -14,3 +14,8 @@ pr_notify:
   action_base_url: "http://127.0.0.1:8765"
   action_port: 8765
   check_interval_minutes: 5
+
+agent:
+  model: "openrouter/free"
+  max_tool_iterations: 5
+  require_confirmation: true

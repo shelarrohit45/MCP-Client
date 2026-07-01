@@ -5,11 +5,17 @@ import urllib.error
 import urllib.request
 
 from action_server import ActionServerError, run_action_server
+from agent_chat import AgentChatError, run_ask
+from agent_history import print_agent_history
+from agent_loop import AgentLoopError
+from agent_tools import AgentToolError, format_tools_for_cli, list_agent_tools, tool_schemas
 from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
 from error_messages import format_error_for_user
+from firebase_store import FirebaseStoreError, run_firebase_connectivity_test
 from github_fetch import fetch_github_data, print_github_summary, save_github_sample
+from llm_client import LLMClientError, chat as llm_chat
 from mcp_manager import MCPConnectionError, list_email_tools_sync, list_github_tools_sync
 from workflows.ci_alert import CiAlertError, run_ci_alert
 from workflows.daily_digest import DailyDigestError, run_daily_digest
@@ -120,6 +126,75 @@ def run_scheduler_command() -> None:
     run_scheduler(settings)
 
 
+def llm_test_command() -> None:
+    settings = load_settings()
+    prompt = (
+        "You are testing an MCP DevOps client. "
+        "Reply with exactly: MCP client LLM test OK"
+    )
+    print(f"Model: {settings.openrouter_model}")
+    print("Sending test prompt to OpenRouter...")
+    response = llm_chat(
+        settings,
+        [{"role": "user", "content": prompt}],
+    )
+    print(f"Response: {response}")
+
+
+def firebase_test_command() -> None:
+    settings = load_settings()
+    print(f"Project: {settings.firebase_project_id}")
+    print("Running Firestore connectivity test...")
+    result = run_firebase_connectivity_test(settings)
+    print("Firebase connection OK.")
+    print(f"Session ID: {result['session_id']}")
+    print(f"Message ID: {result['message_id']}")
+    print(f"Agent run ID: {result['run_id']}")
+    print(f"Workflow history ID: {result['history_id']}")
+    print(f"Messages read back: {result['message_count']}")
+    print("\nCheck Firebase Console → Firestore for these documents.")
+
+
+def ask_command(question: str, session_id: str | None, dry_run: bool, auto_approve: bool) -> None:
+    settings = load_settings()
+    result = run_ask(
+        settings,
+        question,
+        session_id=session_id,
+        dry_run=dry_run,
+        auto_approve=auto_approve,
+    )
+    print(f"Session: {result.session_id}")
+    print(f"Model: {result.model}")
+    if dry_run:
+        print("Mode: dry-run (preview tools only)")
+    if auto_approve:
+        print("Mode: auto-approve (sensitive actions run without prompt)")
+    if result.prior_message_count:
+        print(f"Loaded {result.prior_message_count} prior message(s) from Firebase.")
+    if result.tools_called:
+        print(f"Tools used: {', '.join(result.tools_called)}")
+    print(f"\n{result.response}")
+    print(f"\nResume this chat: python src/main.py ask --session {result.session_id} \"...\"")
+
+
+def agent_tools_command(show_json: bool) -> None:
+    if show_json:
+        import json
+
+        print(json.dumps(tool_schemas(), indent=2))
+        return
+
+    print(format_tools_for_cli())
+    print(f"\nTotal: {len(list_agent_tools())} tool(s)")
+
+
+def agent_history_command(session_id: str | None, limit: int) -> None:
+    settings = load_settings()
+    print_agent_history(settings, session_id=session_id, limit=limit)
+    print("\nLocal debug log: logs/app.log")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -181,6 +256,63 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "run-scheduler",
         help="Run digest and CI alert jobs on schedule (see config/config.yaml)",
+    )
+
+    subparsers.add_parser(
+        "llm-test",
+        help="Test OpenRouter LLM connection (Step 11.1)",
+    )
+
+    subparsers.add_parser(
+        "firebase-test",
+        help="Test Firebase Firestore read/write (Step 11.2)",
+    )
+
+    ask = subparsers.add_parser(
+        "ask",
+        help="Natural language agent chat with tools + Firebase memory (Step 11.3+)",
+    )
+    ask.add_argument("question", help="Your question in plain English")
+    ask.add_argument(
+        "--session",
+        default=None,
+        help="Resume an existing chat session id from a previous ask command",
+    )
+    ask.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview mode: use preview tools only, no emails sent",
+    )
+    ask.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip confirmation prompts for sensitive actions (send email, alerts)",
+    )
+
+    agent_tools = subparsers.add_parser(
+        "agent-tools",
+        help="List agent tools available to the LLM (Step 11.4)",
+    )
+    agent_tools.add_argument(
+        "--json",
+        action="store_true",
+        help="Print OpenRouter-compatible tool schemas as JSON",
+    )
+
+    agent_history = subparsers.add_parser(
+        "agent-history",
+        help="View agent sessions, runs, and tool activity from Firestore (Step 11.7)",
+    )
+    agent_history.add_argument(
+        "--session",
+        default=None,
+        help="Show full history for one session id",
+    )
+    agent_history.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum entries per section (default: 20)",
     )
     return parser
 
@@ -252,6 +384,31 @@ def main() -> None:
             run_scheduler_command()
             return
 
+        if args.command == "llm-test":
+            llm_test_command()
+            return
+
+        if args.command == "firebase-test":
+            firebase_test_command()
+            return
+
+        if args.command == "ask":
+            ask_command(
+                question=args.question,
+                session_id=args.session,
+                dry_run=args.dry_run,
+                auto_approve=args.yes,
+            )
+            return
+
+        if args.command == "agent-tools":
+            agent_tools_command(show_json=args.json)
+            return
+
+        if args.command == "agent-history":
+            agent_history_command(session_id=args.session, limit=args.limit)
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -279,6 +436,26 @@ def main() -> None:
         sys.exit(1)
     except SchedulerError as error:
         cli_logger.error("scheduler_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except LLMClientError as error:
+        cli_logger.error("llm_client_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except FirebaseStoreError as error:
+        cli_logger.error("firebase_store_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentChatError as error:
+        cli_logger.error("agent_chat_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentToolError as error:
+        cli_logger.error("agent_tool_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentLoopError as error:
+        cli_logger.error("agent_loop_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI
