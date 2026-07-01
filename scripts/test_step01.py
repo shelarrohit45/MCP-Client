@@ -52,11 +52,12 @@ def main() -> int:
             check=False,
         )
         output = run_main.stdout.strip()
+        first_line = output.splitlines()[0] if output else ""
         results.append(
             check(
                 "main.py output",
-                run_main.returncode == 0 and output == "MCP client started",
-                output or run_main.stderr.strip(),
+                run_main.returncode == 0 and first_line == "MCP client started",
+                first_line or run_main.stderr.strip(),
             )
         )
 

@@ -271,10 +271,56 @@ tail -f logs/app.log
 ### Run step verification tests
 
 ```bash
+# Quick: all automated code tests (no live GitHub/Email MCP)
+chmod +x scripts/run_all_tests.sh
+./scripts/run_all_tests.sh --unit
+
+# Full local suite (needs .env, MCP servers installed)
+./scripts/run_all_tests.sh
+
+# Or run individual steps
 python scripts/test_step01.py
 # ... through ...
-python scripts/test_step10.py
 python scripts/test_step11.py
+```
+
+### Live smoke test (manual)
+
+After unit tests pass, verify real integrations:
+
+```bash
+python scripts/check_prerequisites.py
+python src/main.py list-github-tools
+python src/main.py list-email-tools
+python src/main.py send-test-email
+python src/main.py llm-test
+python src/main.py firebase-test
+python src/main.py ask --dry-run "How many open PRs?"
+python src/main.py agent-history
+```
+
+### CI on every branch
+
+GitHub Actions runs automatically on **every branch push** and on pull requests (not only `main`). Workflow file: `.github/workflows/ci.yml`.
+
+| Job | What it runs | Needs secrets? |
+|-----|----------------|----------------|
+| **Unit tests** | Steps 1–2, 10–11 (code only, no network) | No |
+| **Integration tests** | Steps 3–9 (GitHub + Email MCP live) | Yes — add repo secrets |
+
+**One-time GitHub setup** (Settings → Secrets and variables → Actions):
+
+| Secret | Used for |
+|--------|----------|
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub MCP in CI |
+| `EMAIL_PASSWORD` | Email MCP in CI (optional; step 5 tool listing works without send) |
+
+Push any branch — CI runs the same way:
+
+```bash
+git checkout -b feature/my-change
+git push -u origin feature/my-change
+# Open GitHub → Actions tab to see results
 ```
 
 ---

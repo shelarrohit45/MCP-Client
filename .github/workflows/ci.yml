@@ -1,0 +1,117 @@
+name: CI
+
+# Runs on every branch push and on pull requests (not limited to main).
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m venv venv
+          ./venv/bin/pip install -r requirements.txt
+
+      - name: Prepare config
+        run: |
+          if [ ! -f config/config.yaml ]; then
+            cp config/config.example.yaml config/config.yaml
+          fi
+          mkdir -p logs
+
+      - name: Create minimal .env for config loader
+        run: |
+          cp .env.example .env
+          cat >> .env <<'EOF'
+          GITHUB_PERSONAL_ACCESS_TOKEN=ci-placeholder-token
+          EMAIL_PASSWORD=ci-placeholder-password
+          EOF
+
+      - name: Run unit tests
+        run: |
+          ./venv/bin/python scripts/test_step01.py
+          ./venv/bin/python scripts/test_step02.py
+          ./venv/bin/python scripts/test_step10.py
+          ./venv/bin/python scripts/test_step11.py
+
+  integration-tests:
+    name: Integration tests (GitHub + Email MCP)
+    runs-on: ubuntu-latest
+    # Skip fork PRs — secrets are not available to untrusted forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m venv venv
+          ./venv/bin/pip install -r requirements.txt
+
+      - name: Install MCP servers
+        run: |
+          chmod +x scripts/install_github_mcp.sh scripts/install_email_mcp.sh
+          ./scripts/install_github_mcp.sh
+          ./scripts/install_email_mcp.sh
+
+      - name: Prepare config
+        run: |
+          if [ ! -f config/config.yaml ]; then
+            cp config/config.example.yaml config/config.yaml
+          fi
+          mkdir -p logs
+
+      - name: Create .env from secrets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASSWORD }}
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "Skipping integration tests: GITHUB_PERSONAL_ACCESS_TOKEN secret not set."
+            echo "INTEGRATION_SKIPPED=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          cp .env.example .env
+          {
+            echo "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_TOKEN"
+            echo "EMAIL_PASSWORD=${EMAIL_PASS:-ci-placeholder-password}"
+          } >> .env
+
+      - name: Run integration tests
+        if: env.INTEGRATION_SKIPPED != 'true'
+        run: |
+          ./venv/bin/python scripts/test_step03.py
+          ./venv/bin/python scripts/test_step04.py
+          ./venv/bin/python scripts/test_step05.py
+          ./venv/bin/python scripts/test_step06.py
+          ./venv/bin/python scripts/test_step07.py
+          ./venv/bin/python scripts/test_step08.py
+          ./venv/bin/python scripts/test_step09.py
