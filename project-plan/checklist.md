@@ -1,98 +1,88 @@
 # Progress Checklist
 
-Mark each item when done. Complete steps in order.
+All build steps (0–11) are **implemented**. Items marked with *(live)* need manual verification in your environment.
 
 ## Step 0 — Prerequisites
 - [x] GitHub repo ready (`shelarrohit45/MCP-Client`)
 - [x] GitHub Personal Access Token created
-- [x] Static sender/receiver set (`shelarrohit78@gmail.com` → `rohitluckyrs45@gmail.com`)
-- [x] Python 3.10+ installed (Python 3.12 via Homebrew)
+- [x] Static sender/receiver configured
+- [x] Python 3.12+ installed
 - [x] Node.js installed (for Email MCP)
 - [x] `.env` created from `.env.example`
-- [x] `python3 scripts/check_prerequisites.py` passes
+- [x] `python scripts/check_prerequisites.py` passes
 
 ## Step 1 — Basic Project
-- [x] Folder structure created (`src/`, `templates/`, `logs/`, `tests/`)
-- [x] Virtual environment set up (Python 3.12)
-- [x] `requirements.txt` created
+- [x] Folder structure (`src/`, `templates/`, `logs/`, `config/`)
+- [x] Virtual environment + `requirements.txt`
 - [x] `.gitignore` created
-- [x] `python src/main.py` runs successfully
+- [x] `python src/main.py` runs
 
 ## Step 2 — Config System
-- [x] `config/config.yaml` created
+- [x] `config/config.yaml` + `config.example.yaml`
 - [x] `.env.example` created
 - [x] `src/config.py` loads YAML + env
-- [x] Config prints without exposing secrets
+- [x] Secrets not printed to console
 
 ## Step 3 — GitHub MCP Connect
-- [x] GitHub MCP server installed (`./scripts/install_github_mcp.sh`)
-- [x] `src/mcp_manager.py` connects to GitHub MCP
-- [x] `list-github-tools` command works
+- [x] GitHub MCP server install script
+- [x] `src/mcp_manager.py`
+- [x] `list-github-tools` command
+- [ ] *(live)* `list-github-tools` returns tools with real PAT
 
 ## Step 4 — GitHub Data Fetch
-- [x] Open PRs fetched from repo
-- [x] Failed CI runs fetched
-- [x] Sample JSON saved to `logs/github_sample.json`
+- [x] `src/github_fetch.py`
+- [x] `fetch-github` command
+- [ ] *(live)* Sample JSON saved to `logs/github_sample.json`
 
 ## Step 5 — Email MCP Connect
-- [x] Email MCP server configured (via npx + project `.env`)
-- [x] `src/mcp_manager.py` extended for Email MCP
-- [x] `list-email-tools` command added
-- [x] `send-test-email` command added
-- [x] Test email received in inbox
+- [x] Email MCP configured
+- [x] `list-email-tools` + `send-test-email`
+- [ ] *(live)* Test email received in inbox
 
 ## Step 6 — CI Alert Workflow
-- [x] Failed runs detected (last 24h)
-- [x] Alert email built
-- [x] `ci-alert` command works
-- [x] `--dry-run` mode works
-- [ ] Live alert received when CI actually fails (run `python src/main.py ci-alert`)
+- [x] `src/workflows/ci_alert.py`
+- [x] `ci-alert` + `--dry-run`
+- [ ] *(live)* Alert received when CI actually fails
 
 ## Step 7 — HTML Templates
-- [x] `jinja2` added to requirements
-- [x] `templates/ci_alert.html` created
-- [x] `src/template_renderer.py` created
-- [x] CI alert sends HTML email
-- [x] `--dry-run` prints HTML preview
-- [ ] HTML alert received in inbox when CI fails
+- [x] Jinja2 templates + `template_renderer.py`
+- [x] CI alert HTML in dry-run/send
+- [ ] *(live)* HTML alert in inbox when CI fails
 
 ## Step 8 — Daily Digest
-- [ ] `src/workflows/daily_digest.py` created
-- [ ] `templates/digest.html` created
-- [ ] `digest --dry-run` and `digest --send` work
+- [x] `src/workflows/daily_digest.py`
+- [x] `templates/digest.html`
+- [x] `digest --dry-run` and `digest --send`
+- [ ] *(live)* Digest email received
 
 ## Step 9 — Logging + Dedup
-- [ ] App logs to `logs/app.log`
-- [ ] State saved in `logs/state.json`
-- [ ] Duplicate CI alerts prevented
+- [x] `logs/app.log` structured logging
+- [x] `logs/state.json` dedup state
+- [x] Duplicate CI alerts prevented
 
 ## Step 10 — Scheduler + Docs
-- [ ] Daily digest scheduled
-- [ ] CI alert check scheduled
-- [ ] `README.md` complete with setup guide
+- [x] `src/scheduler.py` + `run-scheduler`
+- [x] Daily digest + CI jobs scheduled
+- [x] README + docs complete
 
 ## Step 11 — OpenRouter Agent + Firebase
-- [ ] OpenRouter API key configured (`OPENROUTER_API_KEY`)
-- [x] Step 11.1 code: `src/llm_client.py` + `llm-test` command
-- [ ] `python src/main.py llm-test` returns live OpenRouter response
-- [ ] Firebase project + service account configured
-- [x] Step 11.2 code: `src/firebase_store.py` + `firebase-test` command
-- [ ] `python src/main.py firebase-test` writes to Firestore
-- [x] Step 11.3 code: `src/agent_chat.py` + `ask` command
-- [ ] Multi-turn `ask --session` works with Firebase history
-- [x] Step 11.4 code: `src/agent_tools.py` + `agent-tools` command
-- [ ] `python src/main.py agent-tools` lists all 7 tools
-- [x] Step 11.5 code: `src/agent_loop.py` + tool-calling `ask`
-- [ ] `ask` command calls tools and logs runs in Firestore
-- [x] Step 11.6 code: `src/agent_guardrails.py` + `--yes` flag
-- [ ] Sensitive `ask` actions prompt before sending email
-- [ ] Firebase project + Firestore enabled
-- [ ] `firebase-test` writes/reads from Firestore
-- [ ] `ask` command with natural language works
-- [ ] Agent tools wrap existing workflows
-- [ ] Agent loop calls tools and logs to Firebase
-- [ ] Confirmation required before sending emails
-- [x] Step 11.7 code: `src/agent_history.py` + `agent-history` CLI
-- [ ] `agent-history` shows past runs from Firestore
-- [x] Step 11.8 code: agent config in `config.yaml` + README agent docs
-- [ ] `scripts/test_step11.py` passes
+- [x] `src/llm_client.py` + `llm-test`
+- [x] `src/firebase_store.py` + `firebase-test`
+- [x] `src/agent_chat.py` + `ask` + `--session`
+- [x] `src/agent_tools.py` + `agent-tools` (7 tools)
+- [x] `src/agent_loop.py` tool-calling loop
+- [x] `src/agent_guardrails.py` + `--yes`
+- [x] `src/agent_history.py` + `agent-history`
+- [x] Agent config in `config.yaml`
+- [x] `scripts/test_step11.py` passes
+- [x] GitHub Actions CI on all branches (`.github/workflows/ci.yml`)
+- [ ] *(live)* `llm-test` returns OpenRouter response
+- [ ] *(live)* `firebase-test` writes to Firestore
+- [ ] *(live)* `ask` multi-turn with `--session`
+- [ ] *(live)* `agent-history` shows runs in console + Firebase UI
+
+## Documentation
+- [x] [README.md](../README.md) — project overview
+- [x] [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+- [x] [docs/FIREBASE.md](../docs/FIREBASE.md)
+- [x] [docs/TESTING.md](../docs/TESTING.md)

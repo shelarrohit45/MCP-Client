@@ -79,6 +79,7 @@
       border-radius: 20px;
       font-size: 12px;
       margin-top: 12px;
+      margin-right: 6px;
     }
     section {
       background: var(--card);
@@ -175,6 +176,7 @@
     }
     .tag.green { background: #dafbe1; color: var(--success); }
     .tag.orange { background: #fff1c2; color: var(--warning); }
+    .tag.purple { background: #fbefff; color: #8250df; }
     .cmd-required { color: var(--success); font-weight: 600; }
     .cmd-optional { color: var(--muted); }
     @media (max-width: 900px) {
@@ -190,23 +192,30 @@
 <nav class="sidebar">
   <h2>Contents</h2>
   <ul>
-    <li><a href="#overview">1. Overview</a></li>
-    <li><a href="#architecture">2. Architecture</a></li>
-    <li><a href="#setup">3. Setup Guide</a></li>
-    <li><a href="#config">4. Configuration</a></li>
-    <li><a href="#steps">5. What We Built (Steps 0–10)</a></li>
-    <li><a href="#files">6. File Reference</a></li>
-    <li><a href="#commands">7. All CLI Commands</a></li>
-    <li><a href="#terminals">8. Terminals to Keep Running</a></li>
-    <li><a href="#workflows">9. Workflows Explained</a></li>
-    <li><a href="#logs">10. Logs &amp; State</a></li>
-    <li><a href="#troubleshooting">11. Troubleshooting</a></li>
-    <li><a href="#tests">12. Test Scripts</a></li>
+    <li><a href="#goal">1. Project Goal</a></li>
+    <li><a href="#overview">2. Overview</a></li>
+    <li><a href="#tech-stack">3. Tech Stack &amp; Why</a></li>
+    <li><a href="#standards">4. Industry Standards</a></li>
+    <li><a href="#architecture">5. Architecture</a></li>
+    <li><a href="#setup">6. Setup Guide</a></li>
+    <li><a href="#config">7. Configuration</a></li>
+    <li><a href="#steps">8. What We Built (0–11)</a></li>
+    <li><a href="#firebase">9. Firebase Firestore</a></li>
+    <li><a href="#agent">10. Agent Layer</a></li>
+    <li><a href="#files">11. File Reference</a></li>
+    <li><a href="#commands">12. CLI Commands</a></li>
+    <li><a href="#testing">13. How &amp; Where to Test</a></li>
+    <li><a href="#terminals">14. Terminals to Run</a></li>
+    <li><a href="#workflows">15. Workflows</a></li>
+    <li><a href="#logs">16. Logs &amp; State</a></li>
+    <li><a href="#ci">17. CI (All Branches)</a></li>
+    <li><a href="#troubleshooting">18. Troubleshooting</a></li>
   </ul>
-  <h2>Quick Start</h2>
+  <h2>Quick links</h2>
   <ul>
-    <li><a href="#terminals">Run 2–3 terminals</a></li>
-    <li><a href="#commands">Command list</a></li>
+    <li><a href="#testing">Test everything</a></li>
+    <li><a href="#firebase">Test Firebase</a></li>
+    <li><a href="#terminals">run-scheduler</a></li>
   </ul>
 </nav>
 
@@ -214,19 +223,41 @@
 
 <header class="hero" id="top">
   <h1>MCP DevOps Client</h1>
-  <p>Complete project documentation — what we built, how we built it, where everything lives, and which commands to run.</p>
+  <p>Complete project documentation — goal, architecture, tech choices, Firebase agent memory, testing, and operations.</p>
   <span class="badge">Repo: shelarrohit45/MCP-Client</span>
   <span class="badge">Email: shelarrohit78@gmail.com → rohitluckyrs45@gmail.com</span>
-  <span class="badge">Status: Project Complete (Steps 0–10)</span>
+  <span class="badge">Firebase: mcpclient-cd9a9</span>
+  <span class="badge">Status: Complete (Steps 0–11)</span>
 </header>
 
-<!-- SECTION 1 -->
-<section id="overview">
-  <h2>1. Project Overview</h2>
+<!-- SECTION 1: GOAL -->
+<section id="goal">
+  <h2>1. Project Goal</h2>
   <p>
-    <strong>MCP DevOps Client</strong> is a Python application that connects to two MCP (Model Context Protocol) servers —
+    Build a <strong>local DevOps automation client</strong> that monitors a GitHub repository and sends email
+    notifications — with an optional <strong>natural language AI agent</strong> that uses the same workflows.
+  </p>
+  <h3>Primary objectives</h3>
+  <ol>
+    <li>Connect to <strong>GitHub</strong> and <strong>Email</strong> through the <a href="https://modelcontextprotocol.io" target="_blank">Model Context Protocol (MCP)</a> — not custom API glue</li>
+    <li>Automate <strong>CI failure alerts</strong>, <strong>daily digests</strong>, and <strong>PR notifications</strong></li>
+    <li>Run entirely <strong>locally</strong> — no AWS or custom cloud hosting for core automation</li>
+    <li>Add an optional <strong>LLM agent</strong> (<code>ask</code>) with <strong>Firebase Firestore</strong> for chat memory and audit history</li>
+    <li>Follow <strong>industry-standard</strong> patterns: secrets in env, dry-run modes, dedup, structured logging, human confirmation for sensitive actions</li>
+  </ol>
+  <div class="callout ok">
+    <strong>Success criteria:</strong> Scheduler runs digest + CI checks without the agent. Agent layer is additive —
+    OpenRouter + Firebase are only required for <code>ask</code>, <code>llm-test</code>, <code>firebase-test</code>, and <code>agent-history</code>.
+  </div>
+</section>
+
+<!-- SECTION 2: OVERVIEW -->
+<section id="overview">
+  <h2>2. Project Overview</h2>
+  <p>
+    <strong>MCP DevOps Client</strong> is a Python application that connects to two MCP servers —
     <strong>GitHub MCP</strong> and <strong>Email MCP</strong> — to automate repository monitoring and email notifications.
-    No AWS or cloud hosting is required; everything runs locally on your Mac.
+    Step 11 adds OpenRouter (LLM) and Firebase Firestore (agent memory).
   </p>
 
   <h3>What the project does</h3>
@@ -234,110 +265,229 @@
     <li>Fetches GitHub data: open PRs, CI failures/successes, open issues, latest release</li>
     <li>Sends <strong>CI failure alert</strong> emails when checks fail (last 24 hours)</li>
     <li>Sends a <strong>daily digest</strong> email summarizing repo activity</li>
-    <li>Sends <strong>PR event</strong> emails: created, pushed, merged, rejected, approved, changes requested, CI passed/failed</li>
+    <li>Sends <strong>PR event</strong> emails: created, pushed, merged, rejected, approved, CI passed/failed</li>
     <li>Supports <strong>Merge/Reject</strong> buttons in PR emails via a local HTTP action server</li>
-    <li>Prevents duplicate CI alerts using a state file</li>
+    <li>Prevents duplicate CI alerts using <code>logs/state.json</code></li>
     <li>Runs digest and CI checks on a schedule via APScheduler</li>
+    <li>Natural language <strong>ask</strong> command with tool calling (fetch data, preview/send digest, CI alerts)</li>
+    <li>Stores chat sessions, LLM runs, and workflow audit in <strong>Firebase Firestore</strong></li>
     <li>Logs all activity to <code>logs/app.log</code></li>
   </ul>
+</section>
 
-  <h3>Technology stack</h3>
+<!-- SECTION 3: TECH STACK -->
+<section id="tech-stack">
+  <h2>3. Technology Stack — What We Used &amp; Why</h2>
   <table>
-    <tr><th>Layer</th><th>Technology</th></tr>
-    <tr><td>Language</td><td>Python 3.12</td></tr>
-    <tr><td>MCP SDK</td><td><code>mcp</code> Python package</td></tr>
-    <tr><td>GitHub MCP</td><td><code>github-mcp-server</code> (local binary in <code>bin/</code>)</td></tr>
-    <tr><td>Email MCP</td><td><code>@codefuturist/email-mcp</code> (Node.js via <code>node_modules</code>)</td></tr>
-    <tr><td>Config</td><td>YAML (<code>config/config.yaml</code>) + <code>.env</code> secrets</td></tr>
-    <tr><td>Email templates</td><td>Jinja2 HTML (<code>templates/</code>)</td></tr>
-    <tr><td>Scheduler</td><td>APScheduler (<code>src/scheduler.py</code>)</td></tr>
+    <tr><th>Technology</th><th>Role</th><th>Why we chose it</th></tr>
+    <tr>
+      <td><strong>Python 3.12</strong></td>
+      <td>Main application</td>
+      <td>MCP Python SDK, rich ecosystem for CLI, scheduling, HTTP</td>
+    </tr>
+    <tr>
+      <td><strong>GitHub MCP Server</strong></td>
+      <td>GitHub integration</td>
+      <td>Official MCP tool surface; standardized PR/CI/issue access without maintaining custom GitHub API code</td>
+    </tr>
+    <tr>
+      <td><strong>Email MCP</strong> (<code>@codefuturist/email-mcp</code>)</td>
+      <td>Send email</td>
+      <td>MCP-standard email tools; Node.js only as a dependency (no custom Node app code)</td>
+    </tr>
+    <tr>
+      <td><strong>PyYAML + python-dotenv</strong></td>
+      <td>Configuration</td>
+      <td>12-factor pattern: non-secrets in YAML, secrets in <code>.env</code></td>
+    </tr>
+    <tr>
+      <td><strong>Jinja2</strong></td>
+      <td>HTML emails</td>
+      <td>Industry standard for separating email templates from Python logic</td>
+    </tr>
+    <tr>
+      <td><strong>APScheduler</strong></td>
+      <td>Cron-like scheduling</td>
+      <td>In-process scheduler for digest + CI without external cron dependency during development</td>
+    </tr>
+    <tr>
+      <td><strong>httpx</strong></td>
+      <td>OpenRouter HTTP client</td>
+      <td>Modern HTTP library for LLM REST API calls with timeout and retry support</td>
+    </tr>
+    <tr>
+      <td><strong>OpenRouter</strong></td>
+      <td>LLM provider</td>
+      <td>Single API for multiple models; free tier (<code>openrouter/free</code>) for development</td>
+    </tr>
+    <tr>
+      <td><strong>Firebase Firestore</strong></td>
+      <td>Agent memory &amp; audit</td>
+      <td>Managed document DB for durable chat sessions, run logs, workflow history across CLI restarts</td>
+    </tr>
+    <tr>
+      <td><strong>firebase-admin</strong></td>
+      <td>Server-side Firestore SDK</td>
+      <td>Service account auth — standard backend pattern (not client-side Firebase rules)</td>
+    </tr>
+    <tr>
+      <td><strong>GitHub Actions</strong></td>
+      <td>CI/CD</td>
+      <td>Automated tests on <strong>every branch push</strong>, not only <code>main</code></td>
+    </tr>
   </table>
 </section>
 
-<!-- SECTION 2 -->
-<section id="architecture">
-  <h2>2. Architecture</h2>
+<!-- SECTION 4: STANDARDS -->
+<section id="standards">
+  <h2>4. Industry-Standard Implementation Patterns</h2>
+  <table>
+    <tr><th>Pattern</th><th>Where implemented</th><th>Benefit</th></tr>
+    <tr>
+      <td><strong>12-factor config</strong></td>
+      <td><code>config.yaml</code> + <code>.env</code></td>
+      <td>Secrets never committed; config portable across environments</td>
+    </tr>
+    <tr>
+      <td><strong>MCP integration boundary</strong></td>
+      <td><code>mcp_manager.py</code></td>
+      <td>External services accessed through protocol, not scattered API calls</td>
+    </tr>
+    <tr>
+      <td><strong>Workflow modules</strong></td>
+      <td><code>src/workflows/</code></td>
+      <td>Each automation isolated, testable, reusable by agent tools</td>
+    </tr>
+    <tr>
+      <td><strong>Dry-run everywhere</strong></td>
+      <td><code>--dry-run</code> on workflows and <code>ask</code></td>
+      <td>Safe preview before sending emails or triggering alerts</td>
+    </tr>
+    <tr>
+      <td><strong>Idempotency / dedup</strong></td>
+      <td><code>workflow_state.py</code>, <code>logs/state.json</code></td>
+      <td>No duplicate CI alerts or PR notifications</td>
+    </tr>
+    <tr>
+      <td><strong>Structured logging</strong></td>
+      <td><code>app_logging.py</code> → <code>logs/app.log</code></td>
+      <td>Machine-readable logs: <code>workflow=… event=… status=…</code></td>
+    </tr>
+    <tr>
+      <td><strong>Agent tool layer</strong></td>
+      <td><code>agent_tools.py</code></td>
+      <td>LLM calls existing workflows — zero duplicate business logic</td>
+    </tr>
+    <tr>
+      <td><strong>Human-in-the-loop</strong></td>
+      <td><code>agent_guardrails.py</code></td>
+      <td><code>Proceed? [y/N]</code> before send email / live alerts (unless <code>--yes</code>)</td>
+    </tr>
+    <tr>
+      <td><strong>Observability</strong></td>
+      <td><code>agent_runs</code>, <code>workflow_history</code>, <code>agent-history</code></td>
+      <td>Token usage, latency, tools called — durable audit in Firestore</td>
+    </tr>
+    <tr>
+      <td><strong>CI on all branches</strong></td>
+      <td><code>.github/workflows/ci.yml</code></td>
+      <td>Any feature branch push runs tests — not gated on <code>main</code> only</td>
+    </tr>
+  </table>
+</section>
 
-  <h3>Data flow</h3>
-  <pre><code>┌─────────────┐     MCP (stdio)     ┌──────────────────┐
-│  src/main   │ ◄──────────────────►│  GitHub MCP      │
-│  (CLI)      │                     │  (PRs, CI, etc.) │
-└──────┬──────┘                     └──────────────────┘
-       │
-       │  workflows/
-       ▼
-┌──────────────┐     MCP (stdio)     ┌──────────────────┐
-│ ci_alert     │ ◄──────────────────►│  Email MCP       │
-│ daily_digest │                     │  (SMTP send)     │
-│ pr_events    │                     └──────────────────┘
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Gmail inbox  │  receiver: rohitluckyrs45@gmail.com
-└──────────────┘</code></pre>
+<!-- SECTION 5: ARCHITECTURE -->
+<section id="architecture">
+  <h2>5. Architecture</h2>
+
+  <h3>System diagram</h3>
+  <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                        CLI (src/main.py)                        │
+├─────────────────────────────┬───────────────────────────────────┤
+│   Scheduled Automation      │         Agent Layer (optional)    │
+│   scheduler.py              │   ask → agent_chat → agent_loop   │
+│   ├── daily_digest          │        ├── llm_client (OpenRouter)│
+│   └── ci_alert              │        ├── agent_tools (workflows)│
+│   pr_events / pr_notify     │        ├── agent_guardrails       │
+└──────────────┬──────────────┴───────────────┬───────────────────┘
+               │ MCP (stdio)                  │ firebase_store
+               ▼                              ▼
+    ┌──────────────────┐            ┌──────────────────┐
+    │  GitHub MCP      │            │ Firebase         │
+    │  Email MCP       │            │ Firestore        │
+    └────────┬─────────┘            └──────────────────┘
+             ▼
+    ┌──────────────────┐
+    │ GitHub API       │
+    │ Gmail SMTP       │
+    └──────────────────┘</code></pre>
+
+  <h3>Agent data flow (<code>ask</code> command)</h3>
+  <ol>
+    <li>User runs <code>python src/main.py ask "..."</code></li>
+    <li><code>agent_chat.py</code> loads prior messages from Firestore (<code>agent_sessions/{id}/messages</code>)</li>
+    <li><code>agent_loop.py</code> sends conversation + tool schemas to OpenRouter</li>
+    <li>Model may return tool calls → <code>agent_tools.py</code> runs wrapped workflows (e.g. <code>fetch_github_summary</code>)</li>
+    <li>Sensitive tools pause for confirmation unless <code>--yes</code></li>
+    <li>Final answer saved to Firestore; run metadata logged to <code>agent_runs</code></li>
+  </ol>
 
   <h3>Key modules</h3>
   <table>
     <tr><th>Module</th><th>Location</th><th>Role</th></tr>
     <tr><td><code>main.py</code></td><td><code>src/</code></td><td>CLI entry point — all commands</td></tr>
-    <tr><td><code>config.py</code></td><td><code>src/</code></td><td>Loads YAML + .env into Settings</td></tr>
+    <tr><td><code>config.py</code></td><td><code>src/</code></td><td>Loads YAML + .env into Settings dataclass</td></tr>
     <tr><td><code>mcp_manager.py</code></td><td><code>src/</code></td><td>Starts MCP servers, calls tools</td></tr>
-    <tr><td><code>github_fetch.py</code></td><td><code>src/</code></td><td>Fetches PRs, CI, issues, releases</td></tr>
-    <tr><td><code>email_client.py</code></td><td><code>src/</code></td><td>Sends emails via Email MCP</td></tr>
-    <tr><td><code>template_renderer.py</code></td><td><code>src/</code></td><td>Renders Jinja2 HTML templates</td></tr>
     <tr><td><code>scheduler.py</code></td><td><code>src/</code></td><td>APScheduler — digest + CI jobs</td></tr>
     <tr><td><code>workflows/</code></td><td><code>src/workflows/</code></td><td>ci_alert, daily_digest, pr_events, pr_notify</td></tr>
+    <tr><td><code>llm_client.py</code></td><td><code>src/</code></td><td>OpenRouter chat completions + latency logging</td></tr>
+    <tr><td><code>firebase_store.py</code></td><td><code>src/</code></td><td>Firestore CRUD for sessions, runs, history</td></tr>
+    <tr><td><code>agent_chat.py</code></td><td><code>src/</code></td><td><code>ask</code> command + session memory</td></tr>
+    <tr><td><code>agent_loop.py</code></td><td><code>src/</code></td><td>Think → tool call → observe loop</td></tr>
+    <tr><td><code>agent_tools.py</code></td><td><code>src/</code></td><td>7 LLM tools wrapping existing workflows</td></tr>
+    <tr><td><code>agent_guardrails.py</code></td><td><code>src/</code></td><td>Confirmation before sensitive actions</td></tr>
+    <tr><td><code>agent_history.py</code></td><td><code>src/</code></td><td><code>agent-history</code> CLI display</td></tr>
   </table>
 </section>
 
-<!-- SECTION 3 -->
+<!-- SECTION 6: SETUP -->
 <section id="setup">
-  <h2>3. Setup Guide (From Scratch)</h2>
-
-  <h3>Step-by-step first-time setup</h3>
+  <h2>6. Setup Guide (From Scratch)</h2>
   <ol>
     <li>Clone or open the project folder</li>
     <li>Create virtual environment and install dependencies</li>
     <li>Copy and edit config files</li>
     <li>Install MCP servers</li>
+    <li>Configure OpenRouter + Firebase (for agent)</li>
     <li>Verify connections</li>
-    <li>Start the required terminal processes</li>
+    <li>Start the scheduler terminal</li>
   </ol>
 
   <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
 
-# Virtual environment
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Configuration
 cp config/config.example.yaml config/config.yaml
 cp .env.example .env
-# Edit config/config.yaml and .env with your values
+# Edit config/config.yaml and .env
 
-# Install MCP servers
 ./scripts/install_github_mcp.sh
 ./scripts/install_email_mcp.sh
 python scripts/setup_email_mcp_config.py
 
-# Verify prerequisites
 python scripts/check_prerequisites.py
-
-# Verify connections
 python src/main.py list-github-tools
 python src/main.py list-email-tools
-python src/main.py send-test-email</code></pre>
-
-  <div class="callout ok">
-    <strong>Prerequisites check:</strong> Run <code>python scripts/check_prerequisites.py</code> to verify Python, Node.js, config files, and tokens.
-  </div>
+python src/main.py send-test-email
+python src/main.py llm-test
+python src/main.py firebase-test</code></pre>
 </section>
 
-<!-- SECTION 4 -->
+<!-- SECTION 7: CONFIG -->
 <section id="config">
-  <h2>4. Configuration</h2>
+  <h2>7. Configuration</h2>
 
   <h3><code>config/config.yaml</code></h3>
   <pre><code>github:
@@ -349,148 +499,80 @@ email:
   receiver: "rohitluckyrs45@gmail.com"
 
 schedule:
-  digest_time: "21:20"                  # Daily digest at 9:20 PM local time
-  ci_check_interval_minutes: 30         # CI alert check every 30 minutes
+  digest_time: "09:00"                  # Daily digest at 9:00 AM local
+  ci_check_interval_minutes: 30
 
 pr_notify:
   action_base_url: "http://127.0.0.1:8765"
   action_port: 8765
-  check_interval_minutes: 5             # PR watch interval</code></pre>
+  check_interval_minutes: 5
+
+agent:
+  model: "openrouter/free"
+  max_tool_iterations: 5
+  require_confirmation: true</code></pre>
 
   <h3><code>.env</code> (secrets — never commit)</h3>
   <table>
     <tr><th>Variable</th><th>Purpose</th></tr>
-    <tr><td><code>GITHUB_PERSONAL_ACCESS_TOKEN</code></td><td>GitHub PAT with <code>repo</code> scope (write for Merge/Reject)</td></tr>
+    <tr><td><code>GITHUB_PERSONAL_ACCESS_TOKEN</code></td><td>GitHub PAT with <code>repo</code> scope</td></tr>
     <tr><td><code>EMAIL_PASSWORD</code></td><td>Gmail app password for sender account</td></tr>
-    <tr><td><code>ACTION_SECRET</code></td><td>Random secret for PR action links (<code>openssl rand -hex 32</code>)</td></tr>
-    <tr><td><code>ACTION_BASE_URL</code></td><td>URL for Merge/Reject links (use ngrok for phone)</td></tr>
-    <tr><td><code>EMAIL_SMTP_HOST/PORT</code></td><td>Default: smtp.gmail.com:587</td></tr>
-    <tr><td><code>EMAIL_IMAP_HOST/PORT</code></td><td>Default: imap.gmail.com:993</td></tr>
+    <tr><td><code>ACTION_SECRET</code></td><td>PR action link secret (<code>openssl rand -hex 32</code>)</td></tr>
+    <tr><td><code>ACTION_BASE_URL</code></td><td>Merge/Reject URL (ngrok for phone)</td></tr>
+    <tr><td><code>OPENROUTER_API_KEY</code></td><td>OpenRouter API key for agent</td></tr>
+    <tr><td><code>OPENROUTER_MODEL</code></td><td>Default <code>openrouter/free</code></td></tr>
+    <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>Firebase project id (e.g. <code>mcpclient-cd9a9</code>)</td></tr>
+    <tr><td><code>FIREBASE_CREDENTIALS_PATH</code></td><td>Service account JSON path</td></tr>
   </table>
 
-  <h3>Email MCP config</h3>
-  <p>Generated at <code>config/email-mcp/config.toml</code> (gitignored) by <code>scripts/setup_email_mcp_config.py</code>.</p>
+  <h3>Firebase service account</h3>
+  <p>Download from Firebase Console → Project settings → Service accounts → Generate new private key.</p>
+  <p>Save as <code>config/firebase-service-account.json</code> (gitignored).</p>
 </section>
 
-<!-- SECTION 5 -->
+<!-- SECTION 8: STEPS -->
 <section id="steps">
-  <h2>5. What We Built — Steps 0 to 10</h2>
-  <p>Each step below describes <strong>what</strong> was done, <strong>how</strong>, and <strong>where</strong> (files created or modified).</p>
+  <h2>8. What We Built — Steps 0 to 11</h2>
 
-  <div class="step-card" id="step-0">
-    <h4>Step 0 — Prerequisites</h4>
+  <div class="step-card">
+    <h4>Steps 0–5 — Foundation</h4>
     <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> GitHub repo, PAT, Gmail accounts, Python 3.12, Node.js, .env file.</p>
-    <p><strong>Where:</strong> <code>.env</code>, <code>config/config.yaml</code>, <code>scripts/check_prerequisites.py</code></p>
-    <p><strong>Command:</strong> <code>python scripts/check_prerequisites.py</code></p>
-  </div>
-
-  <div class="step-card" id="step-1">
-    <h4>Step 1 — Basic Project</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Folder structure, venv, requirements.txt, .gitignore, hello CLI.</p>
-    <p><strong>Where:</strong> <code>src/main.py</code>, <code>requirements.txt</code>, <code>logs/</code>, <code>templates/</code></p>
-    <p><strong>Command:</strong> <code>python src/main.py</code> (prints config summary)</p>
-  </div>
-
-  <div class="step-card" id="step-2">
-    <h4>Step 2 — Config System</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> YAML + .env loader with Settings dataclass.</p>
-    <p><strong>How:</strong> <code>config.py</code> uses <code>pyyaml</code> and <code>python-dotenv</code>.</p>
-    <p><strong>Where:</strong> <code>src/config.py</code>, <code>config/config.yaml</code>, <code>.env.example</code></p>
-    <p><strong>Command:</strong> <code>python scripts/test_step02.py</code></p>
-  </div>
-
-  <div class="step-card" id="step-3">
-    <h4>Step 3 — GitHub MCP Connect</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Connect to GitHub MCP server over stdio, list available tools.</p>
-    <p><strong>How:</strong> <code>mcp_manager.py</code> launches <code>bin/github-mcp-server</code> with PAT in env.</p>
-    <p><strong>Where:</strong> <code>src/mcp_manager.py</code>, <code>scripts/install_github_mcp.sh</code>, <code>bin/github-mcp-server</code></p>
-    <p><strong>Command:</strong> <code>python src/main.py list-github-tools</code></p>
-  </div>
-
-  <div class="step-card" id="step-4">
-    <h4>Step 4 — GitHub Data Fetch</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Fetch open PRs and failed CI runs, save sample JSON.</p>
-    <p><strong>How:</strong> Uses MCP tools <code>list_pull_requests</code> and <code>search_issues</code> (status:failure).</p>
-    <p><strong>Where:</strong> <code>src/github_fetch.py</code>, output <code>logs/github_sample.json</code></p>
-    <p><strong>Command:</strong> <code>python src/main.py fetch-github</code></p>
-  </div>
-
-  <div class="step-card" id="step-5">
-    <h4>Step 5 — Email MCP Connect</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Connect to Email MCP, send test email.</p>
-    <p><strong>How:</strong> Launches <code>@codefuturist/email-mcp</code> via local node_modules; config in <code>config/email-mcp/config.toml</code>.</p>
-    <p><strong>Where:</strong> <code>src/email_client.py</code>, <code>src/email_mcp_config.py</code>, <code>scripts/install_email_mcp.sh</code></p>
-    <p><strong>Commands:</strong></p>
     <ul>
-      <li><code>python src/main.py list-email-tools</code></li>
-      <li><code>python src/main.py send-test-email</code></li>
+      <li><strong>0:</strong> Prerequisites — Python, Node, PAT, Gmail, <code>check_prerequisites.py</code></li>
+      <li><strong>1:</strong> Project structure, venv, <code>main.py</code></li>
+      <li><strong>2:</strong> YAML + .env config (<code>config.py</code>)</li>
+      <li><strong>3:</strong> GitHub MCP — <code>list-github-tools</code></li>
+      <li><strong>4:</strong> GitHub data fetch — <code>fetch-github</code>, <code>github_fetch.py</code></li>
+      <li><strong>5:</strong> Email MCP — <code>send-test-email</code>, <code>email_client.py</code></li>
     </ul>
   </div>
 
-  <div class="step-card" id="step-6">
-    <h4>Step 6 — CI Alert Workflow</h4>
+  <div class="step-card">
+    <h4>Steps 6–10 — Workflows &amp; Automation</h4>
     <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Detect failed CI (last 24h) and email alert.</p>
-    <p><strong>Where:</strong> <code>src/workflows/ci_alert.py</code></p>
-    <p><strong>Commands:</strong></p>
     <ul>
-      <li><code>python src/main.py ci-alert</code> — send alert</li>
-      <li><code>python src/main.py ci-alert --dry-run</code> — preview only</li>
+      <li><strong>6:</strong> CI alert workflow — <code>ci-alert</code>, dedup via <code>state.json</code></li>
+      <li><strong>7:</strong> Jinja2 HTML templates — <code>ci_alert.html</code></li>
+      <li><strong>8:</strong> Daily digest — <code>digest --dry-run/--send</code>, <code>digest.html</code></li>
+      <li><strong>9:</strong> Logging + dedup — <code>app_logging.py</code>, <code>workflow_state.py</code></li>
+      <li><strong>10:</strong> APScheduler — <code>run-scheduler</code></li>
     </ul>
   </div>
 
-  <div class="step-card" id="step-7">
-    <h4>Step 7 — HTML Templates</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Jinja2 HTML emails for CI alerts.</p>
-    <p><strong>Where:</strong> <code>templates/ci_alert.html</code>, <code>src/template_renderer.py</code></p>
-    <p><strong>Command:</strong> <code>python scripts/test_step07.py</code></p>
-  </div>
-
-  <div class="step-card" id="step-8">
-    <h4>Step 8 — Daily Digest</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Daily summary email: open PRs, issues, CI pass/fail, latest release.</p>
-    <p><strong>Where:</strong> <code>src/workflows/daily_digest.py</code>, <code>templates/digest.html</code></p>
-    <p><strong>Subject:</strong> <code>[Daily Digest] owner/repo — YYYY-MM-DD</code></p>
-    <p><strong>Commands:</strong></p>
-    <ul>
-      <li><code>python src/main.py digest --dry-run</code></li>
-      <li><code>python src/main.py digest --send</code></li>
-    </ul>
-  </div>
-
-  <div class="step-card" id="step-9">
-    <h4>Step 9 — Logging + Duplicate Protection</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> Structured logging, state file, skip duplicate CI alerts.</p>
-    <p><strong>Where:</strong></p>
-    <ul>
-      <li><code>src/app_logging.py</code> → <code>logs/app.log</code></li>
-      <li><code>src/workflow_state.py</code> → <code>logs/state.json</code></li>
-      <li><code>src/error_messages.py</code> → clear CLI error messages</li>
-    </ul>
-    <p><strong>How dedup works:</strong> Each CI failure gets a <code>run_id</code> (<code>{issue_id}:{updated_at}</code>). Already-alerted IDs in <code>logs/state.json</code> are skipped.</p>
-    <p><strong>Command:</strong> <code>python scripts/test_step09.py</code></p>
-  </div>
-
-  <div class="step-card" id="step-10">
-    <h4>Step 10 — Scheduler + Documentation</h4>
-    <p><span class="tag green">Done</span></p>
-    <p><strong>What:</strong> APScheduler for automated digest + CI checks; project README.</p>
-    <p><strong>Where:</strong> <code>src/scheduler.py</code>, <code>README.md</code></p>
-    <p><strong>Schedule:</strong></p>
-    <ul>
-      <li>Daily digest at <code>21:20</code> (9:20 PM, from config)</li>
-      <li>CI alert check every <code>30</code> minutes</li>
-    </ul>
-    <p><strong>Command:</strong> <code>python src/main.py run-scheduler</code></p>
+  <div class="step-card" id="step-11">
+    <h4>Step 11 — OpenRouter Agent + Firebase Memory</h4>
+    <p><span class="tag green">Done</span> <span class="tag purple">11.1–11.8</span></p>
+    <table>
+      <tr><th>Sub-step</th><th>What</th><th>Files / Commands</th></tr>
+      <tr><td>11.1</td><td>OpenRouter LLM client</td><td><code>llm_client.py</code>, <code>llm-test</code></td></tr>
+      <tr><td>11.2</td><td>Firebase Firestore storage</td><td><code>firebase_store.py</code>, <code>firebase-test</code></td></tr>
+      <tr><td>11.3</td><td>Natural language <code>ask</code></td><td><code>agent_chat.py</code>, <code>ask --session</code></td></tr>
+      <tr><td>11.4</td><td>Agent tools (7 tools)</td><td><code>agent_tools.py</code>, <code>agent-tools</code></td></tr>
+      <tr><td>11.5</td><td>Tool-calling loop</td><td><code>agent_loop.py</code></td></tr>
+      <tr><td>11.6</td><td>Guardrails + <code>--yes</code></td><td><code>agent_guardrails.py</code></td></tr>
+      <tr><td>11.7</td><td>Observability</td><td><code>agent_history.py</code>, <code>agent-history</code></td></tr>
+      <tr><td>11.8</td><td>Config + docs + tests</td><td><code>config.yaml</code> agent section, <code>test_step11.py</code></td></tr>
+    </table>
   </div>
 
   <h3>Bonus features (beyond original plan)</h3>
@@ -498,144 +580,294 @@ pr_notify:
     <tr><th>Feature</th><th>Files</th><th>Commands</th></tr>
     <tr>
       <td>Full PR event notifications</td>
-      <td><code>pr_events.py</code>, <code>pr_event_state.py</code>, <code>pr_event_emails.py</code>, <code>github_pr.py</code></td>
+      <td><code>pr_events.py</code>, <code>pr_event_state.py</code></td>
       <td><code>pr-events</code>, <code>pr-watch</code></td>
     </tr>
     <tr>
       <td>Merge/Reject from email</td>
       <td><code>action_server.py</code>, <code>action_tokens.py</code></td>
-      <td><code>action-server</code>, <code>check-action-server</code></td>
+      <td><code>action-server</code></td>
     </tr>
     <tr>
-      <td>New PR notify</td>
-      <td><code>pr_notify.py</code>, <code>pr_state.py</code></td>
-      <td><code>pr-notify</code></td>
+      <td>GitHub Actions CI (all branches)</td>
+      <td><code>.github/workflows/ci.yml</code></td>
+      <td>Auto on every <code>git push</code></td>
     </tr>
   </table>
 </section>
 
-<!-- SECTION 6 -->
+<!-- SECTION 9: FIREBASE -->
+<section id="firebase">
+  <h2>9. Firebase Firestore — Implementation &amp; Testing</h2>
+
+  <h3>Why Firestore (not SQLite or local files)?</h3>
+  <ul>
+    <li><strong>Durable chat memory</strong> — sessions survive CLI restarts and machine reboots</li>
+    <li><strong>Audit trail</strong> — every LLM run and tool workflow logged for observability</li>
+    <li><strong>Queryable history</strong> — list recent sessions, runs, workflow entries</li>
+    <li><strong>Industry pattern</strong> — managed cloud DB with service account auth for backend agents</li>
+    <li><strong>Local logs stay local</strong> — <code>logs/app.log</code> for debugging; Firestore for durable audit</li>
+  </ul>
+
+  <h3>How we implemented it (<code>src/firebase_store.py</code>)</h3>
+  <ol>
+    <li><strong>Initialize once</strong> — <code>firebase_admin</code> with service account certificate per process</li>
+    <li><strong>Write APIs</strong> — <code>save_message()</code>, <code>log_agent_run()</code>, <code>log_workflow_history()</code></li>
+    <li><strong>Read APIs</strong> — <code>get_session_messages()</code>, <code>list_recent_sessions()</code>, <code>list_recent_agent_runs()</code></li>
+    <li><strong>Connectivity test</strong> — <code>run_firebase_connectivity_test()</code> for <code>firebase-test</code> CLI</li>
+    <li><strong>Observability fields</strong> — <code>latency_ms</code>, <code>llm_calls</code>, <code>tools_called</code>, token counts on each run</li>
+  </ol>
+
+  <h3>Firestore collections schema</h3>
+  <table>
+    <tr><th>Collection</th><th>Document path</th><th>Key fields</th></tr>
+    <tr>
+      <td><code>agent_sessions</code></td>
+      <td><code>agent_sessions/{sessionId}</code></td>
+      <td><code>title</code>, <code>created_at</code>, <code>updated_at</code></td>
+    </tr>
+    <tr>
+      <td><code>messages</code> (subcollection)</td>
+      <td><code>agent_sessions/{id}/messages/{msgId}</code></td>
+      <td><code>role</code> (user/assistant/tool), <code>content</code>, <code>tool_name</code></td>
+    </tr>
+    <tr>
+      <td><code>agent_runs</code></td>
+      <td><code>agent_runs/{runId}</code></td>
+      <td><code>session_id</code>, <code>model</code>, <code>prompt_tokens</code>, <code>completion_tokens</code>, <code>tools_called</code>, <code>latency_ms</code>, <code>success</code></td>
+    </tr>
+    <tr>
+      <td><code>workflow_history</code></td>
+      <td><code>workflow_history/{entryId}</code></td>
+      <td><code>workflow</code>, <code>status</code>, <code>summary</code>, <code>metadata.session_id</code></td>
+    </tr>
+  </table>
+
+  <h3>How to test Firebase — step by step</h3>
+
+  <h4>Test 1: CLI connectivity (write + read round-trip)</h4>
+  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
+source venv/bin/activate
+python src/main.py firebase-test</code></pre>
+  <p><strong>Pass if:</strong> prints <code>project_id</code>, <code>session_id</code>, <code>message_id</code>, <code>run_id</code> with no errors.</p>
+
+  <h4>Test 2: Agent creates real data</h4>
+  <pre><code>python src/main.py ask --dry-run "How many open PRs do I have?"</code></pre>
+  <p>Note the <code>Session: session-...</code> in the output.</p>
+
+  <h4>Test 3: View history from CLI</h4>
+  <pre><code>python src/main.py agent-history
+python src/main.py agent-history --session session-abc123</code></pre>
+
+  <h4>Test 4: View in Firebase Console (browser)</h4>
+  <ol>
+    <li>Open <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+    <li>Select project <strong>mcpclient-cd9a9</strong> (or your project id)</li>
+    <li>Go to <strong>Build → Firestore Database → Data</strong></li>
+    <li>Browse <code>agent_sessions</code> → open a session → <code>messages</code> subcollection</li>
+    <li>Browse <code>agent_runs</code> and <code>workflow_history</code></li>
+  </ol>
+
+  <h4>Test 5: Automated tests (no live Firebase needed)</h4>
+  <pre><code>python scripts/test_step11_2.py
+python scripts/test_step11_7.py
+python scripts/test_step11.py</code></pre>
+
+  <div class="callout warn">
+    <strong>Security:</strong> Never commit <code>firebase-service-account.json</code>. Lock Firestore security rules before any shared/production use.
+    The Python app uses the Admin SDK (service account) — not client-side Firebase rules.
+  </div>
+</section>
+
+<!-- SECTION 10: AGENT -->
+<section id="agent">
+  <h2>10. Agent Layer (Step 11)</h2>
+
+  <h3>7 agent tools</h3>
+  <table>
+    <tr><th>Tool</th><th>Action</th><th>Sensitive?</th></tr>
+    <tr><td><code>fetch_github_summary</code></td><td>Fetch live PR/CI data</td><td>No</td></tr>
+    <tr><td><code>run_ci_alert_preview</code></td><td>Preview CI alert</td><td>No</td></tr>
+    <tr><td><code>run_ci_alert</code></td><td>Send CI alert email</td><td>Yes — confirms</td></tr>
+    <tr><td><code>preview_daily_digest</code></td><td>Preview digest</td><td>No</td></tr>
+    <tr><td><code>send_daily_digest</code></td><td>Send digest email</td><td>Yes — confirms</td></tr>
+    <tr><td><code>send_test_email</code></td><td>Send test email</td><td>Yes — confirms</td></tr>
+    <tr><td><code>check_pr_events</code></td><td>Check + notify PR events</td><td>Yes — confirms</td></tr>
+  </table>
+
+  <h3>Agent CLI flags</h3>
+  <table>
+    <tr><th>Flag</th><th>Effect</th></tr>
+    <tr><td><code>--session &lt;id&gt;</code></td><td>Resume prior chat from Firestore</td></tr>
+    <tr><td><code>--dry-run</code></td><td>Preview tools only; no emails sent</td></tr>
+    <tr><td><code>--yes</code></td><td>Skip confirmation for sensitive actions</td></tr>
+  </table>
+
+  <h3>OpenRouter free tier</h3>
+  <p>~<strong>50 requests/day</strong> without purchased credits. HTTP 429 is retried with exponential backoff.</p>
+</section>
+
+<!-- SECTION 11: FILES -->
 <section id="files">
-  <h2>6. Complete File Reference</h2>
+  <h2>11. Complete File Reference</h2>
   <div class="file-tree">mcp-client/
+├── .github/workflows/ci.yml    # CI on every branch push
 ├── src/
 │   ├── main.py                 # CLI entry — all commands
 │   ├── config.py               # Settings from YAML + .env
-│   ├── mcp_manager.py          # GitHub + Email MCP connections
+│   ├── mcp_manager.py          # GitHub + Email MCP
 │   ├── github_fetch.py         # PRs, CI, issues, releases
-│   ├── github_pr.py            # PR details, reviews, merge
-│   ├── email_client.py         # send_email() via Email MCP
-│   ├── email_mcp_config.py     # Email MCP TOML config
-│   ├── template_renderer.py    # Jinja2 HTML rendering
+│   ├── email_client.py         # send_email via Email MCP
 │   ├── scheduler.py            # APScheduler jobs
-│   ├── app_logging.py          # logs/app.log
-│   ├── workflow_state.py       # logs/state.json (CI dedup)
-│   ├── error_messages.py       # User-friendly errors
-│   ├── action_server.py        # HTTP server for Merge/Reject
-│   ├── action_tokens.py        # Signed action tokens
-│   ├── pr_state.py             # PR notify state
-│   ├── pr_event_state.py       # PR event snapshots + dedup
-│   ├── pr_event_emails.py      # PR event email builders
+│   ├── app_logging.py          # Structured logs → logs/app.log
+│   ├── workflow_state.py       # CI dedup → logs/state.json
+│   ├── llm_client.py           # OpenRouter HTTP client
+│   ├── firebase_store.py       # Firestore CRUD
+│   ├── agent_chat.py           # ask command
+│   ├── agent_loop.py           # Tool-calling loop
+│   ├── agent_tools.py          # 7 LLM tools
+│   ├── agent_guardrails.py     # Confirmation prompts
+│   ├── agent_history.py        # agent-history display
+│   ├── action_server.py        # Merge/Reject HTTP server
 │   └── workflows/
-│       ├── ci_alert.py         # CI failure alerts
-│       ├── daily_digest.py     # Daily digest email
-│       ├── pr_events.py        # PR event detector
-│       └── pr_notify.py        # New PR notifications
+│       ├── ci_alert.py
+│       ├── daily_digest.py
+│       ├── pr_events.py
+│       └── pr_notify.py
 ├── config/
-│   ├── config.yaml             # Non-secret settings
-│   ├── config.example.yaml
-│   └── email-mcp/config.toml   # Email MCP (gitignored)
-├── templates/
-│   ├── ci_alert.html           # CI failure email template
-│   └── digest.html             # Daily digest email template
-├── logs/                       # gitignored
-│   ├── app.log                 # Application logs
-│   ├── state.json              # CI alert dedup state
-│   ├── github_sample.json      # fetch-github output
-│   ├── pr_event_state.json     # PR event dedup
-│   └── pr_notify_state.json    # PR notify dedup
+│   ├── config.yaml
+│   └── firebase-service-account.json  # gitignored
+├── templates/                  # Jinja2 HTML emails
+├── logs/                       # gitignored (app.log, state.json)
 ├── scripts/
-│   ├── install_github_mcp.sh
-│   ├── install_email_mcp.sh
-│   ├── setup_email_mcp_config.py
+│   ├── run_all_tests.sh        # Unit + live test runner
 │   ├── check_prerequisites.py
-│   └── test_step01.py … test_step10.py
-├── bin/github-mcp-server       # GitHub MCP binary
+│   └── test_step01.py … test_step11.py
+├── bin/github-mcp-server
 ├── node_modules/               # Email MCP (gitignored)
 ├── requirements.txt
-├── .env                        # Secrets (gitignored)
+├── .env                        # gitignored
 ├── README.md
-└── project-plan/               # Build plan + this document</div>
+└── project-plan/
+    └── PROJECT-DOCUMENTATION.html  # this file</div>
 </section>
 
-<!-- SECTION 7 -->
+<!-- SECTION 12: COMMANDS -->
 <section id="commands">
-  <h2>7. All CLI Commands</h2>
-  <p>Run all commands from project root with venv activated:</p>
+  <h2>12. All CLI Commands</h2>
   <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
 source venv/bin/activate</code></pre>
 
-  <h3>Setup &amp; verification (run once)</h3>
+  <h3>Automation &amp; workflows</h3>
   <table>
     <tr><th>Command</th><th>What it does</th></tr>
-    <tr><td><code>python scripts/check_prerequisites.py</code></td><td>Verify Python, Node, config files</td></tr>
-    <tr><td><code>python src/main.py list-github-tools</code></td><td>List GitHub MCP tools</td></tr>
-    <tr><td><code>python src/main.py list-email-tools</code></td><td>List Email MCP tools</td></tr>
-    <tr><td><code>python src/main.py send-test-email</code></td><td>Send test email to receiver</td></tr>
-    <tr><td><code>python src/main.py fetch-github</code></td><td>Fetch PRs + CI, save to logs/</td></tr>
+    <tr><td><code>run-scheduler</code></td><td>Digest + CI on schedule (keep terminal open)</td></tr>
+    <tr><td><code>ci-alert</code> / <code>--dry-run</code></td><td>CI failure alert</td></tr>
+    <tr><td><code>digest --dry-run</code> / <code>--send</code></td><td>Daily digest</td></tr>
+    <tr><td><code>pr-events</code>, <code>pr-watch</code></td><td>PR event notifications</td></tr>
+    <tr><td><code>action-server</code></td><td>Merge/Reject from email</td></tr>
   </table>
 
-  <h3>Workflow commands (manual / on-demand)</h3>
+  <h3>Agent (OpenRouter + Firebase)</h3>
   <table>
     <tr><th>Command</th><th>What it does</th></tr>
-    <tr><td><code>python src/main.py ci-alert</code></td><td>Send CI failure alert (skips duplicates)</td></tr>
-    <tr><td><code>python src/main.py ci-alert --dry-run</code></td><td>Preview CI alert without sending</td></tr>
-    <tr><td><code>python src/main.py digest --dry-run</code></td><td>Preview daily digest HTML</td></tr>
-    <tr><td><code>python src/main.py digest --send</code></td><td>Send daily digest email</td></tr>
-    <tr><td><code>python src/main.py pr-notify</code></td><td>Notify for new open PRs</td></tr>
-    <tr><td><code>python src/main.py pr-notify --dry-run</code></td><td>Preview PR notifications</td></tr>
-    <tr><td><code>python src/main.py pr-notify --resend --pr N</code></td><td>Resend notification for PR #N</td></tr>
-    <tr><td><code>python src/main.py pr-events</code></td><td>Check all PR events once</td></tr>
-    <tr><td><code>python src/main.py pr-events --dry-run</code></td><td>Preview PR events without sending</td></tr>
-  </table>
-
-  <h3>Long-running commands (keep terminal open)</h3>
-  <table>
-    <tr><th>Command</th><th>What it does</th><th>Interval</th></tr>
-    <tr>
-      <td class="cmd-required"><code>python src/main.py run-scheduler</code></td>
-      <td>Digest at 21:20 + CI check every 30 min</td>
-      <td>Automated</td>
-    </tr>
-    <tr>
-      <td class="cmd-required"><code>python src/main.py pr-watch</code></td>
-      <td>Poll PR events and send emails</td>
-      <td>Every 5 min (config)</td>
-    </tr>
-    <tr>
-      <td class="cmd-optional"><code>python src/main.py action-server</code></td>
-      <td>Merge/Reject links in PR emails</td>
-      <td>Always on</td>
-    </tr>
-  </table>
-
-  <h3>Utility commands</h3>
-  <table>
-    <tr><th>Command</th><th>What it does</th></tr>
-    <tr><td><code>python src/main.py check-action-server</code></td><td>Test if action server is reachable</td></tr>
-    <tr><td><code>python src/main.py</code></td><td>Print config summary (no subcommand)</td></tr>
-    <tr><td><code>python src/main.py --help</code></td><td>List all commands</td></tr>
+    <tr><td><code>llm-test</code></td><td>Test OpenRouter connection</td></tr>
+    <tr><td><code>firebase-test</code></td><td>Test Firestore write/read</td></tr>
+    <tr><td><code>ask "..."</code></td><td>Natural language agent with tools</td></tr>
+    <tr><td><code>ask --session &lt;id&gt;</code></td><td>Resume chat from Firestore</td></tr>
+    <tr><td><code>ask --dry-run</code></td><td>Preview mode only</td></tr>
+    <tr><td><code>ask --yes</code></td><td>Skip confirmation prompts</td></tr>
+    <tr><td><code>agent-tools</code></td><td>List 7 agent tools</td></tr>
+    <tr><td><code>agent-history</code></td><td>View sessions, runs, workflow activity</td></tr>
+    <tr><td><code>agent-history --session &lt;id&gt;</code></td><td>Full history for one session</td></tr>
   </table>
 </section>
 
-<!-- SECTION 8 -->
+<!-- SECTION 13: TESTING -->
+<section id="testing">
+  <h2>13. How &amp; Where to Test</h2>
+
+  <h3>Where to test</h3>
+  <table>
+    <tr><th>Environment</th><th>What runs</th><th>How</th></tr>
+    <tr>
+      <td><strong>Your Mac (terminal)</strong></td>
+      <td>Full stack — GitHub, email, Firebase, agent</td>
+      <td><code>./scripts/run_all_tests.sh</code></td>
+    </tr>
+    <tr>
+      <td><strong>Your Mac (fast)</strong></td>
+      <td>Code-only tests, no network</td>
+      <td><code>./scripts/run_all_tests.sh --unit</code></td>
+    </tr>
+    <tr>
+      <td><strong>Firebase Console (browser)</strong></td>
+      <td>Visual Firestore data inspection</td>
+      <td>console.firebase.google.com → Firestore → Data</td>
+    </tr>
+    <tr>
+      <td><strong>Email inbox</strong></td>
+      <td>Real email delivery</td>
+      <td><code>send-test-email</code>, <code>digest --send</code></td>
+    </tr>
+    <tr>
+      <td><strong>GitHub Actions</strong></td>
+      <td>CI on every branch push</td>
+      <td>Push any branch → Actions tab on GitHub</td>
+    </tr>
+  </table>
+
+  <h3>Quick “is everything working?” checklist</h3>
+  <pre><code>source venv/bin/activate
+
+# 1. Prerequisites
+python scripts/check_prerequisites.py
+
+# 2. Fast automated tests (~30 seconds)
+chmod +x scripts/run_all_tests.sh
+./scripts/run_all_tests.sh --unit
+
+# 3. Live connections
+python src/main.py list-github-tools
+python src/main.py list-email-tools
+python src/main.py send-test-email
+
+# 4. Workflow previews (no send)
+python src/main.py fetch-github
+python src/main.py ci-alert --dry-run
+python src/main.py digest --dry-run
+
+# 5. Agent + Firebase
+python src/main.py llm-test
+python src/main.py firebase-test
+python src/main.py ask --dry-run "How many open PRs?"
+python src/main.py agent-history</code></pre>
+
+  <h3>Pass criteria</h3>
+  <table>
+    <tr><th>Test</th><th>Pass if</th></tr>
+    <tr><td><code>check_prerequisites.py</code></td><td>All required checks PASS</td></tr>
+    <tr><td><code>run_all_tests.sh --unit</code></td><td>"All test groups passed"</td></tr>
+    <tr><td><code>send-test-email</code></td><td>Email arrives in inbox</td></tr>
+    <tr><td><code>firebase-test</code></td><td>session_id + run_id printed</td></tr>
+    <tr><td><code>ask --dry-run</code></td><td>Answer returned with session id</td></tr>
+    <tr><td><code>agent-history</code></td><td>Shows sessions and runs</td></tr>
+    <tr><td><code>run-scheduler</code></td><td>Prints schedule, stays running</td></tr>
+  </table>
+
+  <h3>Individual step tests</h3>
+  <pre><code>python scripts/test_step01.py   # through ...
+python scripts/test_step11.py   # full Step 11 suite</code></pre>
+</section>
+
+<!-- SECTION 14: TERMINALS -->
 <section id="terminals">
-  <h2>8. Terminals You Need to Keep Running</h2>
+  <h2>14. Terminals to Keep Running</h2>
 
   <div class="callout">
-    <strong>Minimum (1 terminal):</strong> Only digest + CI automation.<br>
-    <strong>Recommended (2 terminals):</strong> Scheduler + PR watch.<br>
-    <strong>Full setup (3 terminals):</strong> Scheduler + PR watch + action server.
+    <strong>Minimum (1 terminal):</strong> <code>run-scheduler</code> for digest + CI automation.<br>
+    <strong>Recommended (2 terminals):</strong> Scheduler + <code>pr-watch</code>.<br>
+    <strong>Full (3 terminals):</strong> + <code>action-server</code> for Merge/Reject from email.
   </div>
 
   <h3>Terminal 1 — <span class="cmd-required">Required</span></h3>
@@ -643,133 +875,107 @@ source venv/bin/activate</code></pre>
 source venv/bin/activate
 python src/main.py run-scheduler</code></pre>
   <ul>
-    <li>Daily digest at <strong>21:20</strong> (9:20 PM) local time</li>
+    <li>Daily digest at <strong>09:00</strong> (9 AM) local time — change in <code>config.yaml</code></li>
     <li>CI alert check every <strong>30 minutes</strong></li>
-    <li>Press <code>Ctrl+C</code> to stop</li>
+    <li>Does <strong>not</strong> need OpenRouter or Firebase</li>
   </ul>
 
-  <h3>Terminal 2 — <span class="cmd-required">Recommended</span></h3>
-  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
-source venv/bin/activate
-python src/main.py pr-watch</code></pre>
-  <ul>
-    <li>PR event emails every <strong>5 minutes</strong></li>
-    <li>Events: created, pushed, merged, rejected, approved, CI pass/fail, etc.</li>
-  </ul>
+  <h3>Terminal 2 — Recommended</h3>
+  <pre><code>python src/main.py pr-watch</code></pre>
 
-  <h3>Terminal 3 — <span class="cmd-optional">Optional</span> (Merge/Reject from email)</h3>
-  <pre><code>cd "/Users/rohitshelar/Desktop/AI Development/mcp-client"
-source venv/bin/activate
-python src/main.py action-server</code></pre>
-  <ul>
-    <li>Required for Merge/Reject buttons in PR emails</li>
-    <li>For phone: set <code>ACTION_BASE_URL</code> in .env to ngrok HTTPS URL</li>
-  </ul>
+  <h3>Terminal 3 — Optional</h3>
+  <pre><code>python src/main.py action-server</code></pre>
 
-  <h3>Summary table</h3>
-  <table>
-    <tr><th>#</th><th>Command</th><th>Required?</th><th>Purpose</th></tr>
-    <tr><td>1</td><td><code>run-scheduler</code></td><td>Yes</td><td>Digest + CI alerts on schedule</td></tr>
-    <tr><td>2</td><td><code>pr-watch</code></td><td>Recommended</td><td>PR event email notifications</td></tr>
-    <tr><td>3</td><td><code>action-server</code></td><td>Optional</td><td>Merge/Reject links in emails</td></tr>
-  </table>
-
-  <div class="callout warn">
-    <strong>Important:</strong> If you close these terminals, automation stops. For 24/7 operation, use cron, launchd (macOS), or a process manager — see README.md for cron examples.
-  </div>
+  <h3>Watch logs (second terminal)</h3>
+  <pre><code>tail -f logs/app.log</code></pre>
 </section>
 
-<!-- SECTION 9 -->
+<!-- SECTION 15: WORKFLOWS -->
 <section id="workflows">
-  <h2>9. Workflows Explained</h2>
+  <h2>15. Workflows Explained</h2>
 
-  <h3>CI Alert (<code>ci_alert.py</code>)</h3>
+  <h3>CI Alert</h3>
   <ol>
     <li>Search GitHub for PRs with <code>status:failure</code> in last 24h</li>
-    <li>Filter out failures already in <code>logs/state.json</code></li>
-    <li>Render <code>templates/ci_alert.html</code></li>
-    <li>Send HTML email via Email MCP</li>
-    <li>Save alerted run IDs to state</li>
+    <li>Skip failures already in <code>logs/state.json</code></li>
+    <li>Render <code>templates/ci_alert.html</code> and send via Email MCP</li>
   </ol>
 
-  <h3>Daily Digest (<code>daily_digest.py</code>)</h3>
+  <h3>Daily Digest</h3>
   <ol>
-    <li>Fetch open PRs, open issues count, failed/successful CI (24h), latest release</li>
-    <li>Render <code>templates/digest.html</code> (handles empty sections)</li>
+    <li>Fetch open PRs, issues, CI pass/fail, latest release</li>
+    <li>Render <code>templates/digest.html</code></li>
     <li>Send with subject <code>[Daily Digest] owner/repo — date</code></li>
   </ol>
 
-  <h3>PR Events (<code>pr_events.py</code>)</h3>
+  <h3>Agent ask</h3>
   <ol>
-    <li>Load previous PR snapshots from <code>logs/pr_event_state.json</code></li>
-    <li>Compare with current PR state from GitHub</li>
-    <li>Detect: created, pushed, merged, rejected, reopened, approved, changes_requested, ci_failed, ci_passed</li>
-    <li>Send email for new events only (dedup via event keys)</li>
-  </ol>
-
-  <h3>Scheduler (<code>scheduler.py</code>)</h3>
-  <ol>
-    <li>Uses APScheduler BlockingScheduler</li>
-    <li>Job 1: <code>run_daily_digest(send=True)</code> — cron at digest_time</li>
-    <li>Job 2: <code>run_ci_alert()</code> — interval every N minutes</li>
-    <li>Errors are logged; scheduler keeps running</li>
+    <li>Load Firestore session history</li>
+    <li>LLM decides whether to call tools</li>
+    <li>Tools execute workflows (with guardrails for sensitive ones)</li>
+    <li>Response + run metadata saved to Firestore</li>
   </ol>
 </section>
 
-<!-- SECTION 10 -->
+<!-- SECTION 16: LOGS -->
 <section id="logs">
-  <h2>10. Logs &amp; State Files</h2>
+  <h2>16. Logs &amp; State Files</h2>
   <table>
-    <tr><th>File</th><th>Purpose</th><th>Updated by</th></tr>
-    <tr><td><code>logs/app.log</code></td><td>All workflow runs, MCP tool calls, errors</td><td>Every command</td></tr>
-    <tr><td><code>logs/state.json</code></td><td>CI alert dedup (<code>alerted_run_ids</code>)</td><td><code>ci-alert</code> after send</td></tr>
-    <tr><td><code>logs/pr_event_state.json</code></td><td>PR snapshots + sent event keys</td><td><code>pr-watch</code>, <code>pr-events</code></td></tr>
-    <tr><td><code>logs/pr_notify_state.json</code></td><td>Which PRs were notified as new</td><td><code>pr-notify</code></td></tr>
-    <tr><td><code>logs/github_sample.json</code></td><td>Sample fetch output</td><td><code>fetch-github</code></td></tr>
+    <tr><th>File / Collection</th><th>Purpose</th><th>Updated by</th></tr>
+    <tr><td><code>logs/app.log</code></td><td>Local debug logs (LLM latency, workflows, MCP)</td><td>Every command</td></tr>
+    <tr><td><code>logs/state.json</code></td><td>CI alert dedup</td><td><code>ci-alert</code></td></tr>
+    <tr><td><code>logs/pr_event_state.json</code></td><td>PR event dedup</td><td><code>pr-watch</code></td></tr>
+    <tr><td><code>agent_sessions</code> (Firestore)</td><td>Chat sessions + messages</td><td><code>ask</code></td></tr>
+    <tr><td><code>agent_runs</code> (Firestore)</td><td>LLM run audit (tokens, latency, tools)</td><td><code>ask</code></td></tr>
+    <tr><td><code>workflow_history</code> (Firestore)</td><td>Tool runs + confirmations</td><td>Agent tools, guardrails</td></tr>
   </table>
-  <pre><code># Watch logs live
-tail -f logs/app.log
-
-# View CI dedup state
-cat logs/state.json</code></pre>
 </section>
 
-<!-- SECTION 11 -->
+<!-- SECTION 17: CI -->
+<section id="ci">
+  <h2>17. CI on Every Branch (Not Only main)</h2>
+  <p>File: <code>.github/workflows/ci.yml</code></p>
+  <p>Triggers on <strong>every <code>git push</code></strong> and on <strong>pull requests</strong> — any branch.</p>
+
+  <table>
+    <tr><th>Job</th><th>Tests</th><th>Secrets needed?</th></tr>
+    <tr><td>Unit tests</td><td>Steps 1–2, 10–11</td><td>No — always runs</td></tr>
+    <tr><td>Integration tests</td><td>Steps 3–9 (live GitHub + Email MCP)</td><td>Yes — <code>GITHUB_PERSONAL_ACCESS_TOKEN</code></td></tr>
+  </table>
+
+  <h3>One-time GitHub setup</h3>
+  <p>Repo → Settings → Secrets and variables → Actions → add:</p>
+  <ul>
+    <li><code>GITHUB_PERSONAL_ACCESS_TOKEN</code></li>
+    <li><code>EMAIL_PASSWORD</code> (optional)</li>
+  </ul>
+
+  <pre><code>git checkout -b feature/my-change
+git push -u origin feature/my-change
+# Open GitHub → Actions tab to see CI results</code></pre>
+</section>
+
+<!-- SECTION 18: TROUBLESHOOTING -->
 <section id="troubleshooting">
-  <h2>11. Troubleshooting</h2>
+  <h2>18. Troubleshooting</h2>
   <table>
     <tr><th>Problem</th><th>Solution</th></tr>
-    <tr><td>GitHub MCP not found</td><td>Run <code>./scripts/install_github_mcp.sh</code></td></tr>
-    <tr><td>Private repo returns empty data</td><td>PAT needs <code>repo</code> read scope</td></tr>
-    <tr><td>Email MCP connection failed</td><td>Check <code>EMAIL_PASSWORD</code> (Gmail app password)</td></tr>
-    <tr><td>Merge/Reject returns 403</td><td>PAT needs Pull requests + Contents <strong>write</strong></td></tr>
-    <tr><td>Email links don't work on phone</td><td>Start <code>action-server</code>; set <code>ACTION_BASE_URL</code> to ngrok URL</td></tr>
-    <tr><td>Duplicate CI alerts</td><td>Should not happen — check <code>logs/state.json</code></td></tr>
-    <tr><td>No releases in digest</td><td>Normal if repo has no GitHub releases</td></tr>
-    <tr><td>Scheduler stopped</td><td>Re-run <code>run-scheduler</code> in a terminal</td></tr>
-    <tr><td><code>unhandled errors in TaskGroup</code></td><td>Usually MCP shutdown noise; fixed for 404 releases</td></tr>
+    <tr><td>GitHub MCP not found</td><td><code>./scripts/install_github_mcp.sh</code></td></tr>
+    <tr><td>Email MCP failed</td><td>Check <code>EMAIL_PASSWORD</code> (Gmail app password)</td></tr>
+    <tr><td>Scheduler stopped</td><td>Re-run <code>run-scheduler</code></td></tr>
+    <tr><td><code>llm-test</code> 401</td><td>Check <code>OPENROUTER_API_KEY</code></td></tr>
+    <tr><td><code>llm-test</code> 429</td><td>Free tier ~50 req/day; wait or add credits</td></tr>
+    <tr><td><code>firebase-test</code> fails</td><td>Create Firestore DB; check project id + JSON path</td></tr>
+    <tr><td><code>ask</code> fails</td><td>Run <code>firebase-test</code> first</td></tr>
+    <tr><td>Empty <code>agent-history</code></td><td>Run <code>ask</code> or <code>firebase-test</code> first</td></tr>
+    <tr><td>Agent sent without prompt</td><td>You used <code>--yes</code> or disabled <code>require_confirmation</code></td></tr>
+    <tr><td>CI fails on feature branch</td><td>Unit tests should pass without secrets; check Actions log</td></tr>
   </table>
-</section>
-
-<!-- SECTION 12 -->
-<section id="tests">
-  <h2>12. Test Scripts</h2>
-  <p>Run these to verify each build step:</p>
-  <pre><code>python scripts/test_step01.py
-python scripts/test_step02.py
-python scripts/test_step03.py
-python scripts/test_step04.py
-python scripts/test_step05.py
-python scripts/test_step06.py
-python scripts/test_step07.py
-python scripts/test_step08.py
-python scripts/test_step09.py
-python scripts/test_step10.py</code></pre>
 </section>
 
 <footer style="text-align:center;color:var(--muted);font-size:13px;padding:24px 0;">
   MCP DevOps Client — Project Documentation<br>
-  Generated for shelarrohit45/MCP-Client · Steps 0–10 complete
+  shelarrohit45/MCP-Client · Steps 0–11 complete · Updated June 2026
 </footer>
 
 </main>
