@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from email_client import EmailSendError
 from agent_chat import AgentChatError
+from agent_tools import AgentToolError
 from firebase_store import FirebaseStoreError
 from github_fetch import GitHubFetchError
 from llm_client import LLMClientError
@@ -72,6 +73,9 @@ def format_error_for_user(error: Exception) -> str:
 
     if isinstance(error, AgentChatError):
         return f"Agent chat error: {message}"
+
+    if isinstance(error, AgentToolError):
+        return f"Agent tool error: {message}"
 
     if "401" in message or "bad credentials" in lower:
         return "Authentication failed. Check GITHUB_TOKEN or email credentials in .env."

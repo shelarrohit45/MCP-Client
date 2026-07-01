@@ -6,6 +6,7 @@ import urllib.request
 
 from action_server import ActionServerError, run_action_server
 from agent_chat import AgentChatError, run_ask
+from agent_tools import AgentToolError, format_tools_for_cli, list_agent_tools, tool_schemas
 from app_logging import get_logger, setup_logging
 from config import ConfigError, load_settings
 from email_client import EmailSendError, send_test_email
@@ -163,6 +164,17 @@ def ask_command(question: str, session_id: str | None) -> None:
     print(f"\nResume this chat: python src/main.py ask --session {result.session_id} \"...\"")
 
 
+def agent_tools_command(show_json: bool) -> None:
+    if show_json:
+        import json
+
+        print(json.dumps(tool_schemas(), indent=2))
+        return
+
+    print(format_tools_for_cli())
+    print(f"\nTotal: {len(list_agent_tools())} tool(s)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MCP DevOps client")
     subparsers = parser.add_subparsers(dest="command")
@@ -246,6 +258,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Resume an existing chat session id from a previous ask command",
     )
+
+    agent_tools = subparsers.add_parser(
+        "agent-tools",
+        help="List agent tools available to the LLM (Step 11.4)",
+    )
+    agent_tools.add_argument(
+        "--json",
+        action="store_true",
+        help="Print OpenRouter-compatible tool schemas as JSON",
+    )
     return parser
 
 
@@ -328,6 +350,10 @@ def main() -> None:
             ask_command(question=args.question, session_id=args.session)
             return
 
+        if args.command == "agent-tools":
+            agent_tools_command(show_json=args.json)
+            return
+
         print_default_summary()
     except ConfigError as error:
         cli_logger.error("configuration_error detail=%s", error)
@@ -367,6 +393,10 @@ def main() -> None:
         sys.exit(1)
     except AgentChatError as error:
         cli_logger.error("agent_chat_error detail=%s", error)
+        print(format_error_for_user(error))
+        sys.exit(1)
+    except AgentToolError as error:
+        cli_logger.error("agent_tool_error detail=%s", error)
         print(format_error_for_user(error))
         sys.exit(1)
     except Exception as error:  # noqa: BLE001 - surface MCP failures clearly in CLI
