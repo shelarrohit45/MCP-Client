@@ -1,4 +1,5 @@
 venv/
+.ci-venv/
 bin/
 .env
 logs/
