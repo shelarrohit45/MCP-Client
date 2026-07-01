@@ -73,6 +73,7 @@ def main() -> int:
                     completion_tokens=6,
                     tools_called=["fetch_github_summary"],
                     iterations=2,
+                    latency_ms=150.0,
                 ),
             ),
             patch("agent_chat.log_agent_run", return_value="run-1"),

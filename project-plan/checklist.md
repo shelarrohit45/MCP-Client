@@ -94,4 +94,5 @@ Mark each item when done. Complete steps in order.
 - [ ] Confirmation required before sending emails
 - [x] Step 11.7 code: `src/agent_history.py` + `agent-history` CLI
 - [ ] `agent-history` shows past runs from Firestore
+- [x] Step 11.8 code: agent config in `config.yaml` + README agent docs
 - [ ] `scripts/test_step11.py` passes
